@@ -51,6 +51,7 @@ export default function UploadsPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [items, setItems] = useState<PrivateUploadItem[]>([]);
   const [query, setQuery] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -105,16 +106,22 @@ export default function UploadsPage() {
     }
 
     setBusy(true);
+    setUploadPercent(0);
     setError(null);
     try {
       const client = new ApiClient();
-      const res = await client.uploadPrivateUpload(file);
+      const res = await client.uploadPrivateUploadWithProgress(file, {
+        onProgress: ({ percent }) => {
+          if (typeof percent === 'number') setUploadPercent(percent);
+        },
+      });
       if (!res.success) throw new Error(res.error || 'Upload failed');
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
       setBusy(false);
+      setTimeout(() => setUploadPercent(null), 800);
     }
   };
 
@@ -266,6 +273,21 @@ export default function UploadsPage() {
               />
             </div>
           </div>
+
+          {typeof uploadPercent === 'number' && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                <div className="font-semibold">Uploading</div>
+                <div>{Math.min(100, Math.max(0, uploadPercent))}%</div>
+              </div>
+              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-2 rounded-full bg-rose-500 transition-[width] duration-200"
+                  style={{ width: `${Math.min(100, Math.max(0, uploadPercent))}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

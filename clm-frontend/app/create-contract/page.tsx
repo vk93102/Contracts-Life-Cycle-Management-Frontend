@@ -12,7 +12,7 @@ import {
   TemplateSchemaSection,
 } from '../lib/api-client';
 import DashboardLayout from '../components/DashboardLayout';
-import { Bell, ChevronLeft, ChevronRight, FileText, Search, Sparkles, Settings2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Bell, ChevronLeft, FileText, Search, Sparkles, Settings2, ZoomIn, ZoomOut } from 'lucide-react';
 
 // Types
 type Template = FileTemplateItem;
@@ -22,6 +22,7 @@ type AiStep = 'select' | 'edit';
 
 type CustomClause = { title?: string; content: string };
 type Constraint = { name: string; value: string };
+type ConstraintTemplate = { key: string; label: string; category?: string; default?: string };
 
 const STANDARD_TEMPLATES_ORDER = [
   'Mutual_NDA.txt',
@@ -91,6 +92,10 @@ const CreateContractInner = () => {
   const [customClauses, setCustomClauses] = useState<CustomClause[]>([]);
   const [constraints, setConstraints] = useState<Constraint[]>([]);
 
+  const [constraintLibrary, setConstraintLibrary] = useState<ConstraintTemplate[]>([]);
+  const [constraintLibraryLoading, setConstraintLibraryLoading] = useState(false);
+  const [constraintLibraryQuery, setConstraintLibraryQuery] = useState('');
+
   const [previewText, setPreviewText] = useState<string>('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewZoom, setPreviewZoom] = useState(1);
@@ -98,15 +103,14 @@ const CreateContractInner = () => {
   const [aiStep, setAiStep] = useState<AiStep>('select');
   const [aiTitle, setAiTitle] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
-  const [aiText, setAiText] = useState('');
+  const [aiBaseText, setAiBaseText] = useState('');
+  const [aiSuggestionText, setAiSuggestionText] = useState('');
   const [aiTemplateQuery, setAiTemplateQuery] = useState('');
   const [aiLoadingTemplate, setAiLoadingTemplate] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const aiAbortRef = useRef<AbortController | null>(null);
   const aiEditorRef = useRef<HTMLDivElement | null>(null);
-
-  const cardsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchTemplates();
@@ -130,7 +134,8 @@ const CreateContractInner = () => {
       setAiStep('select');
       setAiTitle('');
       setAiPrompt('');
-      setAiText('');
+      setAiBaseText('');
+      setAiSuggestionText('');
       setAiError(null);
       return;
     }
@@ -172,29 +177,40 @@ const CreateContractInner = () => {
         } else {
           setClauses([]);
         }
+
+        setConstraintLibraryLoading(true);
+        const consRes = await client.getConstraintsLibrary({});
+        if (consRes.success) {
+          const data: any = consRes.data as any;
+          const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+          setConstraintLibrary(list);
+        } else {
+          setConstraintLibrary([]);
+        }
       } finally {
         setSchemaLoading(false);
         setClausesLoading(false);
+        setConstraintLibraryLoading(false);
       }
     };
 
     loadSchemaAndClauses();
   }, [selectedTemplate]);
 
-  // Keep the AI editor DOM in sync with aiText.
+  // Keep the AI editor DOM in sync with the accepted/base text.
   useEffect(() => {
     if (mode !== 'ai') return;
     if (aiStep !== 'edit') return;
     if (!aiEditorRef.current) return;
-    if (!aiText) {
+    if (!aiBaseText) {
       aiEditorRef.current.innerText = '';
       return;
     }
     // Only update if it differs to reduce selection jumps.
-    if (aiEditorRef.current.innerText !== aiText) {
-      aiEditorRef.current.innerText = aiText;
+    if (aiEditorRef.current.innerText !== aiBaseText) {
+      aiEditorRef.current.innerText = aiBaseText;
     }
-  }, [aiText, aiStep, mode]);
+  }, [aiBaseText, aiStep, mode]);
 
   const startAiBuilder = async () => {
     if (!selectedTemplate) return;
@@ -210,12 +226,9 @@ const CreateContractInner = () => {
       const content = String((res.data as any)?.content || '');
       const name = String((res.data as any)?.name || '') || String(selectedTemplate || 'Template');
       setAiTitle(name);
-      setAiText(content);
+      setAiBaseText(content);
+      setAiSuggestionText('');
       setAiStep('edit');
-      // Seed prompt to help first-time users.
-      if (!aiPrompt.trim()) {
-        setAiPrompt('Rewrite the payment terms to Net 45, add a late fee clause, and tighten confidentiality to include trade secrets.');
-      }
     } catch (e) {
       setAiError(e instanceof Error ? e.message : 'Failed to load template');
     } finally {
@@ -230,7 +243,7 @@ const CreateContractInner = () => {
       setAiError('Please enter a prompt');
       return;
     }
-    const current = aiEditorRef.current?.innerText ?? aiText;
+    const current = aiEditorRef.current?.innerText ?? aiBaseText;
     if (!current.trim()) {
       setAiError('Template content is empty');
       return;
@@ -244,6 +257,7 @@ const CreateContractInner = () => {
       setAiError(null);
       setAiGenerating(true);
       let nextText = '';
+      setAiSuggestionText('');
 
       const client = new ApiClient();
       await client.streamTemplateAiGenerate(
@@ -256,10 +270,10 @@ const CreateContractInner = () => {
           signal: aborter.signal,
           onDelta: (delta) => {
             nextText += delta;
-            setAiText(nextText);
+            setAiSuggestionText(nextText);
           },
           onDone: () => {
-            setAiText(nextText);
+            setAiSuggestionText(nextText);
           },
           onError: (err) => {
             setAiError(err || 'AI generation failed');
@@ -279,12 +293,23 @@ const CreateContractInner = () => {
     setAiGenerating(false);
   };
 
+  const acceptAiSuggestion = () => {
+    const next = (aiSuggestionText || '').trim();
+    if (!next) return;
+    setAiBaseText(next);
+    setAiSuggestionText('');
+  };
+
+  const rejectAiSuggestion = () => {
+    setAiSuggestionText('');
+  };
+
   const createDraftFromAi = async () => {
     try {
       setAiError(null);
       setLoading(true);
       const client = new ApiClient();
-      const renderedText = aiEditorRef.current?.innerText ?? aiText;
+      const renderedText = aiEditorRef.current?.innerText ?? aiBaseText;
       const title = (aiTitle || selectedTemplateObj?.name || 'Contract').trim();
       const res = await client.createContractFromContent({
         title,
@@ -371,13 +396,6 @@ const CreateContractInner = () => {
     return () => window.clearTimeout(timer);
   }, [selectedTemplate, fieldValues, selectedClauseIds, customClauses, constraints, mode, user]);
 
-  const scrollCards = (dir: 'left' | 'right') => {
-    const el = cardsRef.current;
-    if (!el) return;
-    const delta = dir === 'left' ? -420 : 420;
-    el.scrollBy({ left: delta, behavior: 'smooth' });
-  };
-
   const setField = (key: string, value: string) => {
     setFieldValues((p) => ({ ...p, [key]: value }));
   };
@@ -390,6 +408,16 @@ const CreateContractInner = () => {
 
   const addCustomClause = () => setCustomClauses((p) => [...p, { title: '', content: '' }]);
   const addConstraint = () => setConstraints((p) => [...p, { name: '', value: '' }]);
+
+  const addConstraintFromLibrary = (t: ConstraintTemplate) => {
+    const name = (t?.label || t?.key || '').trim();
+    if (!name) return;
+    setConstraints((prev) => {
+      const exists = prev.some((c) => (c.name || '').trim().toLowerCase() === name.toLowerCase());
+      if (exists) return prev;
+      return [...prev, { name, value: String(t?.default || '') }];
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -444,14 +472,6 @@ const CreateContractInner = () => {
   };
 
   const selectedTemplateObj = templates.find((t) => t.filename === selectedTemplate) || null;
-
-  const standardTemplates = useMemo(() => {
-    const map = new Map<string, Template>();
-    for (const t of templates) map.set(t.filename, t);
-    const ordered = STANDARD_TEMPLATES_ORDER.map((f) => map.get(f)).filter(Boolean) as Template[];
-    if (ordered.length) return ordered;
-    return templates.slice(0, 4);
-  }, [templates]);
 
   const allTemplatesOrdered = useMemo(() => {
     const standardSet = new Set(STANDARD_TEMPLATES_ORDER);
@@ -635,17 +655,6 @@ const CreateContractInner = () => {
                         </div>
                       </div>
                     </div>
-
-                    <div className="mt-6">
-                      <div className="text-sm font-semibold text-[#0F141F]">Prompt (optional)</div>
-                      <div className="mt-2 text-xs text-black/45">You can refine it later in the editor step.</div>
-                      <textarea
-                        value={aiPrompt}
-                        onChange={(e) => setAiPrompt(e.target.value)}
-                        placeholder="e.g., Change payment terms to Net 45, add a late fee clause, and set governing law to Delaware."
-                        className="mt-3 w-full min-h-[120px] rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF5C7A]/25"
-                      />
-                    </div>
                   </section>
                 </div>
               ) : (
@@ -674,7 +683,7 @@ const CreateContractInner = () => {
                       <button
                         type="button"
                         onClick={createDraftFromAi}
-                        disabled={loading || aiGenerating || !aiText.trim()}
+                        disabled={loading || aiGenerating || !aiBaseText.trim()}
                         className="h-10 px-4 rounded-full bg-white border border-black/10 text-sm font-semibold text-[#111827] hover:bg-black/5 disabled:opacity-60"
                       >
                         Create Draft
@@ -694,7 +703,7 @@ const CreateContractInner = () => {
                       <div className="px-6 pt-5 pb-4 border-b border-black/5 flex items-center justify-between">
                         <div className="text-sm font-semibold text-[#111827]">Template Editor</div>
                         <div className="text-xs text-black/45">
-                          {aiGenerating ? 'Applying AI changes…' : 'Preview + edit with prompts'}
+                          {aiGenerating ? 'Generating suggestion…' : 'Edit content; accept AI suggestions on the right'}
                         </div>
                       </div>
 
@@ -704,7 +713,7 @@ const CreateContractInner = () => {
                           contentEditable={!aiGenerating}
                           suppressContentEditableWarning
                           onInput={() => {
-                            setAiText(aiEditorRef.current?.innerText || '');
+                            setAiBaseText(aiEditorRef.current?.innerText || '');
                           }}
                           className={`min-h-[60vh] whitespace-pre-wrap text-[13px] leading-6 text-slate-900 font-serif outline-none ${
                             aiGenerating ? 'opacity-80' : ''
@@ -713,16 +722,16 @@ const CreateContractInner = () => {
                       </div>
                     </section>
 
-                    {/* AI Prompt */}
+                    {/* AI Suggestions */}
                     <aside className="col-span-12 lg:col-span-4 space-y-6">
                       <div className="bg-white rounded-[28px] border border-black/5 shadow-sm overflow-hidden">
                         <div className="px-6 pt-6 pb-4 border-b border-black/5">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-[#111827]">AI Prompts</p>
+                            <p className="text-sm font-semibold text-[#111827]">AI Suggestions</p>
                             <span className="text-[11px] text-black/45">Streaming</span>
                           </div>
                           <p className="text-xs text-black/45 mt-2">
-                            Describe changes and watch them apply in real time.
+                            Generate a proposed revision, then accept or reject it.
                           </p>
                         </div>
 
@@ -739,10 +748,10 @@ const CreateContractInner = () => {
                             <button
                               type="button"
                               onClick={applyAiPrompt}
-                              disabled={aiGenerating}
+                              disabled={aiGenerating || !aiPrompt.trim()}
                               className="h-10 px-4 rounded-full bg-[#0F141F] text-white text-sm font-semibold disabled:opacity-60"
                             >
-                              {aiGenerating ? 'Generating…' : 'Apply Changes'}
+                              {aiGenerating ? 'Generating…' : 'Generate Suggestion'}
                             </button>
                             {aiGenerating ? (
                               <button
@@ -755,8 +764,46 @@ const CreateContractInner = () => {
                             ) : null}
                           </div>
 
-                          <div className="mt-4 text-xs text-black/45">
-                            Tip: be specific (sections, numbers, jurisdictions).
+                          {aiError ? <div className="mt-3 text-xs text-rose-600">{aiError}</div> : null}
+
+                          <div className="mt-4 text-xs text-black/45">Tip: be specific (sections, numbers, jurisdictions).</div>
+
+                          {/* Proposed revision */}
+                          <div className="mt-5 rounded-2xl border border-black/10 bg-white overflow-hidden">
+                            <div className="px-4 py-3 border-b border-black/5 flex items-center justify-between">
+                              <div className="text-xs font-semibold text-[#111827]">Proposed Revision</div>
+                              <div className="text-[11px] text-black/45">
+                                {aiSuggestionText.trim() ? 'Ready' : 'None yet'}
+                              </div>
+                            </div>
+                            <div className="p-4">
+                              {!aiSuggestionText.trim() ? (
+                                <div className="text-sm text-[#6B7280]">Run a prompt to generate suggestions.</div>
+                              ) : (
+                                <div className="text-xs text-slate-800 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                                  {aiSuggestionText}
+                                </div>
+                              )}
+
+                              <div className="mt-4 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={acceptAiSuggestion}
+                                  disabled={!aiSuggestionText.trim() || aiGenerating}
+                                  className="h-10 px-4 rounded-full bg-[#FF5C7A] text-white text-sm font-semibold disabled:opacity-60"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={rejectAiSuggestion}
+                                  disabled={!aiSuggestionText.trim() || aiGenerating}
+                                  className="h-10 px-4 rounded-full bg-white border border-black/10 text-sm font-semibold text-[#111827] hover:bg-black/5 disabled:opacity-60"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -767,91 +814,6 @@ const CreateContractInner = () => {
             </div>
           ) : (
             <>
-              <div className="mt-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-[#0F141F]">Standard Templates</h2>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => scrollCards('left')}
-                      className="w-9 h-9 rounded-lg bg-white border border-black/5 shadow-sm flex items-center justify-center text-[#0F141F]/60 hover:text-[#0F141F]"
-                      aria-label="Scroll left"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => scrollCards('right')}
-                      className="w-9 h-9 rounded-lg bg-white border border-black/5 shadow-sm flex items-center justify-center text-[#0F141F]/60 hover:text-[#0F141F]"
-                      aria-label="Scroll right"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  ref={cardsRef}
-                  className="mt-4 flex gap-4 overflow-x-auto pb-2 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none]"
-                >
-                  <style jsx>{`
-                    div::-webkit-scrollbar { display: none; }
-                  `}</style>
-                  {templatesLoading ? (
-                    <div className="text-sm text-[#6B7280] py-6">Loading templates…</div>
-                  ) : standardTemplates.length === 0 ? (
-                    <div className="text-sm text-[#6B7280] py-6">No templates available</div>
-                  ) : (
-                    standardTemplates.map((t) => {
-                      const isSelected = selectedTemplate === t.filename;
-                      const meta = TEMPLATE_CARD_META[t.filename] || {
-                        title: t.name,
-                        subtitle: t.description || 'Template',
-                        pill: 'Standard',
-                        eta: '~5 mins',
-                        iconBg: 'bg-slate-50 text-slate-700',
-                        icon: <FileText className="w-5 h-5" />,
-                      };
-                      return (
-                        <button
-                          key={t.filename}
-                          type="button"
-                          onClick={() => setSelectedTemplate(t.filename)}
-                          className={`min-w-[280px] md:min-w-[320px] text-left bg-white rounded-[18px] border shadow-sm p-5 transition ${
-                            isSelected
-                              ? 'border-[#FF5C7A] ring-2 ring-[#FF5C7A]/20'
-                              : 'border-black/5 hover:border-black/10'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className={`w-10 h-10 rounded-xl ${meta.iconBg} flex items-center justify-center`}>{meta.icon}</div>
-                            <div
-                              className={`w-6 h-6 rounded-full flex items-center justify-center border ${
-                                isSelected ? 'bg-[#FF5C7A] border-[#FF5C7A]' : 'bg-white border-black/10'
-                              }`}
-                            >
-                              {isSelected ? <div className="w-2.5 h-2.5 rounded-full bg-white" /> : null}
-                            </div>
-                          </div>
-
-                          <div className="mt-4">
-                            <div className="font-semibold text-[#0F141F]">{meta.title}</div>
-                            <div className="text-sm text-[#6B7280] mt-1">{meta.subtitle}</div>
-                          </div>
-
-                          <div className="mt-4 flex items-center gap-2">
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-[#F3F4F6] text-[#0F141F]/70">
-                              {meta.pill}
-                            </span>
-                            <span className="text-xs text-[#6B7280]">{meta.eta}</span>
-                          </div>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
               <div className="mt-8">
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <h2 className="text-sm font-semibold text-[#0F141F]">All Templates</h2>
@@ -1065,6 +1027,52 @@ const CreateContractInner = () => {
                                   Add
                                 </button>
                               </div>
+
+                              {/* Constraint Library */}
+                              <div className="mt-3">
+                                <div className="text-xs font-semibold text-[#6B7280]">Constraint Library</div>
+                                <input
+                                  value={constraintLibraryQuery}
+                                  onChange={(e) => setConstraintLibraryQuery(e.target.value)}
+                                  placeholder="Search constraints…"
+                                  className="mt-2 w-full px-4 py-2.5 border border-black/10 rounded-xl bg-white focus:ring-2 focus:ring-[#FF5C7A]/30 focus:border-[#FF5C7A]/40"
+                                />
+                                <div className="mt-2 max-h-44 overflow-y-auto space-y-2 pr-1">
+                                  {constraintLibraryLoading ? (
+                                    <div className="text-sm text-[#6B7280]">Loading constraints…</div>
+                                  ) : constraintLibrary.length === 0 ? (
+                                    <div className="text-sm text-[#6B7280]">No constraints available.</div>
+                                  ) : (
+                                    constraintLibrary
+                                      .filter((x) => {
+                                        const q = constraintLibraryQuery.trim().toLowerCase();
+                                        if (!q) return true;
+                                        const hay = `${x.label || ''} ${x.key || ''} ${x.category || ''}`.toLowerCase();
+                                        return hay.includes(q);
+                                      })
+                                      .slice(0, 40)
+                                      .map((x) => (
+                                        <button
+                                          key={x.key}
+                                          type="button"
+                                          onClick={() => addConstraintFromLibrary(x)}
+                                          className="w-full text-left bg-white rounded-xl border border-black/5 p-3 hover:border-black/10"
+                                        >
+                                          <div className="flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                              <div className="text-sm font-semibold text-[#111827] truncate">{x.label}</div>
+                                              <div className="text-xs text-[#6B7280]">
+                                                {(x.category || 'General') + (x.default ? ` • Default: ${String(x.default)}` : '')}
+                                              </div>
+                                            </div>
+                                            <div className="text-xs font-semibold text-[#FF5C7A]">Add</div>
+                                          </div>
+                                        </button>
+                                      ))
+                                  )}
+                                </div>
+                              </div>
+
                               <div className="mt-3 space-y-3">
                                 {constraints.length === 0 ? (
                                   <div className="text-sm text-[#6B7280]">Add constraints like jurisdiction, data residency, liability caps, etc.</div>

@@ -22,6 +22,7 @@ const ContractEditorPageV2: React.FC = () => {
   const [contract, setContract] = useState<Contract | null>(null);
   const [clauses, setClauses] = useState<ClauseCard[]>([]);
   const [clauseSearch, setClauseSearch] = useState('');
+  const [clauseLimit, setClauseLimit] = useState(50);
 
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [editorReady, setEditorReady] = useState(false);
@@ -279,6 +280,11 @@ const ContractEditorPageV2: React.FC = () => {
     });
   }, [clauses, clauseSearch]);
 
+  useEffect(() => {
+    // Reset pagination when searching.
+    setClauseLimit(50);
+  }, [clauseSearch]);
+
   return (
     <DashboardLayout>
       <div className="bg-[#F2F0EB]">
@@ -337,17 +343,33 @@ const ContractEditorPageV2: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
               {filteredClauses.length === 0 ? (
                 <div className="text-sm text-black/45 p-2">No clauses available.</div>
               ) : (
-                filteredClauses.slice(0, 20).map((c) => (
+                filteredClauses.slice(0, clauseLimit).map((c) => (
                   <div key={c.id} className="rounded-2xl border border-black/5 bg-[#F6F3ED] p-4">
                     <p className="text-[10px] tracking-wider font-bold text-[#FF5C7A]">{c.clause_id || 'CLAUSE'}</p>
                     <p className="text-sm font-semibold text-[#111827] mt-1">{c.name || 'Untitled clause'}</p>
                     {c.content && <p className="text-xs text-black/45 mt-2 leading-relaxed line-clamp-3">{c.content}</p>}
                   </div>
                 ))
+              )}
+
+              {filteredClauses.length > clauseLimit && (
+                <button
+                  type="button"
+                  onClick={() => setClauseLimit((n) => n + 50)}
+                  className="w-full h-10 rounded-full border border-black/10 bg-white text-sm font-semibold text-black/70 hover:bg-black/5"
+                >
+                  Show more ({filteredClauses.length - clauseLimit} remaining)
+                </button>
+              )}
+
+              {filteredClauses.length > 0 && (
+                <div className="text-[11px] text-black/40 px-1">
+                  Showing {Math.min(filteredClauses.length, clauseLimit)} of {filteredClauses.length} clauses
+                </div>
               )}
             </div>
           </aside>

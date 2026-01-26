@@ -440,6 +440,70 @@ export class ApiClient {
     }
   }
 
+  private async multipartRequestWithProgress<T>(
+    method: 'POST' | 'PUT' | 'PATCH',
+    endpoint: string,
+    formData: FormData,
+    opts?: {
+      onProgress?: (info: { loaded: number; total?: number; percent?: number }) => void
+    }
+  ): Promise<ApiResponse<T>> {
+    // fetch() does not reliably expose upload progress; use XHR.
+    this.loadTokens()
+    const url = `${this.baseUrl}${endpoint}`
+
+    return new Promise((resolve) => {
+      try {
+        const xhr = new XMLHttpRequest()
+        xhr.open(method, url, true)
+        xhr.withCredentials = true
+        if (this.token) {
+          xhr.setRequestHeader('Authorization', `Bearer ${this.token}`)
+        }
+
+        if (xhr.upload && opts?.onProgress) {
+          xhr.upload.onprogress = (evt) => {
+            const total = evt.lengthComputable ? evt.total : undefined
+            const percent = total ? Math.round((evt.loaded / total) * 100) : undefined
+            opts.onProgress?.({ loaded: evt.loaded, total, percent })
+          }
+        }
+
+        xhr.onerror = () => {
+          resolve({ success: false, error: 'Network error', status: 0 })
+        }
+
+        xhr.onload = () => {
+          const status = xhr.status
+          const raw = xhr.responseText
+          let data: any = {}
+          try {
+            data = raw ? JSON.parse(raw) : {}
+          } catch {
+            data = {}
+          }
+
+          if (status === 401) {
+            // Best-effort: refresh is async and XHR cannot be retried without rebuilding FormData.
+            resolve({ success: false, error: 'Unauthorized - Please log in again', status: 401 })
+            return
+          }
+
+          if (status < 200 || status >= 300) {
+            resolve({ success: false, error: data?.message || data?.detail || 'Request failed', status })
+            return
+          }
+
+          resolve({ success: true, data: data as T, status })
+        }
+
+        xhr.send(formData)
+      } catch (e) {
+        resolve({ success: false, error: e instanceof Error ? e.message : 'Unknown error', status: 0 })
+      }
+    })
+  }
+
   private async blobRequest(
     endpoint: string,
     allowRetry: boolean = true,
@@ -846,6 +910,11 @@ export class ApiClient {
     return this.request('GET', `${ApiClient.API_V1_PREFIX}/clauses/${queryString}`)
   }
 
+  async getConstraintsLibrary(params?: Record<string, any>): Promise<ApiResponse<{ success: boolean; count: number; results: any[] }>> {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : ''
+    return this.request('GET', `${ApiClient.API_V1_PREFIX}/clauses/constraints-library/${queryString}`)
+  }
+
   // ==================== TEMPLATES ====================
   async createTemplate(data: Partial<ContractTemplate>): Promise<ApiResponse<ContractTemplate>> {
     return this.request('POST', `${ApiClient.API_V1_PREFIX}/contract-templates/`, data)
@@ -1016,6 +1085,15 @@ export class ApiClient {
     return this.multipartRequest('POST', `${ApiClient.API_V1_PREFIX}/private-uploads/`, form)
   }
 
+  async uploadPrivateUploadWithProgress(
+    file: File,
+    opts?: { onProgress?: (info: { loaded: number; total?: number; percent?: number }) => void }
+  ): Promise<ApiResponse<any>> {
+    const form = new FormData()
+    form.append('file', file)
+    return this.multipartRequestWithProgress('POST', `${ApiClient.API_V1_PREFIX}/private-uploads/`, form, opts)
+  }
+
   // ==================== REVIEW CONTRACTS ====================
   async listReviewContracts(params?: { q?: string }): Promise<ApiResponse<ReviewContractsListResponse>> {
     const qs = params?.q ? `?q=${encodeURIComponent(params.q)}` : ''
@@ -1035,6 +1113,23 @@ export class ApiClient {
     if (opts?.title) form.append('title', opts.title)
     if (typeof opts?.analyze === 'boolean') form.append('analyze', String(opts.analyze))
     return this.multipartRequest('POST', `${ApiClient.API_V1_PREFIX}/review-contracts/`, form)
+  }
+
+  async uploadReviewContractWithProgress(
+    file: File,
+    opts?: {
+      title?: string
+      analyze?: boolean
+      onProgress?: (info: { loaded: number; total?: number; percent?: number }) => void
+    }
+  ): Promise<ApiResponse<{ success: boolean; review_contract: ReviewContractDetail }>> {
+    const form = new FormData()
+    form.append('file', file)
+    if (opts?.title) form.append('title', opts.title)
+    if (typeof opts?.analyze === 'boolean') form.append('analyze', String(opts.analyze))
+    return this.multipartRequestWithProgress('POST', `${ApiClient.API_V1_PREFIX}/review-contracts/`, form, {
+      onProgress: opts?.onProgress,
+    })
   }
 
   async deleteReviewContract(id: string): Promise<ApiResponse<any>> {

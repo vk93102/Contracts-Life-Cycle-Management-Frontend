@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "npx -y node@20 ./node_modules/next/dist/bin/next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "test": "npm run lint"
   },
   "dependencies": {
     "lucide-react": "^0.563.0",

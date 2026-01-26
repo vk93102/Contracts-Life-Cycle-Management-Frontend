@@ -56,6 +56,8 @@ export default function ReviewPage() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
+  const [processing, setProcessing] = useState(false);
 
   const [items, setItems] = useState<ReviewContractListItem[]>([]);
   const [query, setQuery] = useState('');
@@ -125,16 +127,30 @@ export default function ReviewPage() {
     }
 
     setBusy(true);
+    setUploadPercent(0);
+    setProcessing(false);
     setError(null);
     try {
       const client = new ApiClient();
-      const res = await client.uploadReviewContract(file, { analyze: analyzeOnUpload });
+      const res = await client.uploadReviewContractWithProgress(file, {
+        analyze: analyzeOnUpload,
+        onProgress: ({ percent }) => {
+          if (typeof percent === 'number') setUploadPercent(percent);
+        },
+      });
       if (!res.success) throw new Error(res.error || 'Upload failed');
+
+      // If analyze was requested, backend may spend time extracting/embedding/reviewing.
+      if (analyzeOnUpload) setProcessing(true);
       await load(query);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
       setBusy(false);
+      setTimeout(() => {
+        setUploadPercent(null);
+        setProcessing(false);
+      }, 800);
     }
   };
 
@@ -333,6 +349,37 @@ export default function ReviewPage() {
               />
             </div>
           </div>
+
+          {(typeof uploadPercent === 'number' || processing) && (
+            <div className="mt-4">
+              {typeof uploadPercent === 'number' && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                    <div className="font-semibold">Uploading</div>
+                    <div>{Math.min(100, Math.max(0, uploadPercent))}%</div>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className="h-2 rounded-full bg-rose-500 transition-[width] duration-200"
+                      style={{ width: `${Math.min(100, Math.max(0, uploadPercent))}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {processing && (
+                <div>
+                  <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                    <div className="font-semibold">Processing</div>
+                    <div>Analyzing…</div>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-2 w-1/3 rounded-full bg-slate-300 animate-pulse" />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {error && <div className="mt-4 text-sm text-rose-600">{error}</div>}
         </div>
