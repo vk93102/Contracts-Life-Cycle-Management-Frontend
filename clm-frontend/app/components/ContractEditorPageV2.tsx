@@ -50,6 +50,7 @@ const ContractEditorPageV2: React.FC = () => {
 
   const editorApiRef = useRef<Editor | null>(null);
   const [editorReady, setEditorReady] = useState(false);
+  const [editorInitialized, setEditorInitialized] = useState(false);
   const [editorHtml, setEditorHtml] = useState('');
   const [editorText, setEditorText] = useState('');
   const [dirty, setDirty] = useState(false);
@@ -57,6 +58,18 @@ const ContractEditorPageV2: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+
+  // Autosave ordering controls: prevent out-of-order responses from overwriting newer content.
+  const lastLocalEditMsRef = useRef<number>(0);
+  const saveSeqRef = useRef<number>(0);
+  const saveAbortRef = useRef<AbortController | null>(null);
+
+  // Local snapshot: protects against API hiccups and gives "real-time" persistence.
+  const snapshotTimerRef = useRef<number | null>(null);
+  const snapshotKey = useMemo(
+    () => (contractId ? `clm:contractEditor:snapshot:v2:${contractId}` : null),
+    [contractId]
+  );
 
   // E-sign
   const [signOpen, setSignOpen] = useState(false);
@@ -72,6 +85,48 @@ const ContractEditorPageV2: React.FC = () => {
   const [generationCtx, setGenerationCtx] = useState<GenerationContext | null>(null);
   const [rehydrating, setRehydrating] = useState(false);
   const rehydratedOnceRef = useRef(false);
+
+  const unwrapContractLike = (raw: any) => {
+    // Some backend endpoints return { contract: {...} } or { data: {...} }.
+    // Be defensive so we don't accidentally set wrapper objects as the contract.
+    return raw?.contract ?? raw?.data?.contract ?? raw?.data ?? raw;
+  };
+
+  const writeLocalSnapshot = (payload: { html: string; text: string; client_updated_at_ms: number }) => {
+    if (typeof window === 'undefined') return;
+    if (!snapshotKey) return;
+    try {
+      localStorage.setItem(
+        snapshotKey,
+        JSON.stringify({
+          html: payload.html,
+          text: payload.text,
+          client_updated_at_ms: payload.client_updated_at_ms,
+          saved_at_ms: Date.now(),
+        })
+      );
+    } catch {
+      // ignore
+    }
+  };
+
+  const readLocalSnapshot = (): { html: string; text: string; client_updated_at_ms: number } | null => {
+    if (typeof window === 'undefined') return null;
+    if (!snapshotKey) return null;
+    try {
+      const raw = localStorage.getItem(snapshotKey);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || typeof obj !== 'object') return null;
+      const html = typeof (obj as any).html === 'string' ? (obj as any).html : '';
+      const text = typeof (obj as any).text === 'string' ? (obj as any).text : '';
+      const ms = Number((obj as any).client_updated_at_ms || 0);
+      if (!ms || ms < 0) return null;
+      return { html, text, client_updated_at_ms: ms };
+    } catch {
+      return null;
+    }
+  };
 
   // Persist Add Template panel UI state across reload/logout.
   useEffect(() => {
@@ -189,8 +244,41 @@ const ContractEditorPageV2: React.FC = () => {
 
         if (res.success) {
           const raw: any = res.data as any;
-          const unwrapped: any = raw?.contract ?? raw?.data?.contract ?? raw?.data ?? raw;
+          const unwrapped: any = unwrapContractLike(raw);
           setContract(unwrapped as any);
+
+          // Initialize editor state BEFORE rendering the editor to avoid a mount-with-empty flash.
+          const c = unwrapped as any;
+          const md = normalizeMetadata(c?.metadata);
+          const backendClientMs = Number(md?.editor_client_updated_at_ms || 0) || 0;
+
+          const renderedHtml: string | undefined = c?.rendered_html || md?.rendered_html;
+          const renderedText: string =
+            c?.rendered_text ||
+            md?.rendered_text ||
+            c?.raw_text ||
+            md?.raw_text ||
+            '';
+
+          const backendHtml = renderedHtml && String(renderedHtml).trim().length > 0 ? String(renderedHtml) : '';
+          const backendText = String(renderedText || '');
+
+          const snap = readLocalSnapshot();
+          const snapIsNewer = !!snap && snap.client_updated_at_ms > backendClientMs;
+          const snapHasContent = !!snap && (!isMeaningfullyEmptyHtml(snap.html) || String(snap.text || '').trim().length > 0);
+
+          const chosenHtml = snapIsNewer && snapHasContent ? snap!.html : backendHtml;
+          const chosenText = snapIsNewer && snapHasContent ? snap!.text : backendText;
+
+          const initialHtml = !isMeaningfullyEmptyHtml(chosenHtml)
+            ? String(chosenHtml)
+            : textToHtml(String(chosenText || ''));
+
+          setEditorHtml(initialHtml || '');
+          setEditorText(String(chosenText || ''));
+          setDirty(false);
+          setSaveError(null);
+          setEditorInitialized(true);
         } else {
           setError(res.error || 'Failed to load contract');
         }
@@ -236,28 +324,25 @@ const ContractEditorPageV2: React.FC = () => {
     }
   }, [contractId]);
 
-  // Initialize editor HTML from contract once it loads.
+  // Fallback initialization path: only run if the editor wasn't initialized during load().
   useEffect(() => {
+    if (editorInitialized) return;
+    if (!contractId) return;
+    if (!contract) return;
     const c = contract as any;
     const md = normalizeMetadata(c?.metadata);
 
     const renderedHtml: string | undefined = c?.rendered_html || md?.rendered_html;
-    const renderedText: string =
-      c?.rendered_text ||
-      md?.rendered_text ||
-      // Some endpoints use raw_text (e.g. file-based preview/generation)
-      c?.raw_text ||
-      md?.raw_text ||
-      '';
+    const renderedText: string = c?.rendered_text || md?.rendered_text || c?.raw_text || md?.raw_text || '';
     const initialHtml = renderedHtml && String(renderedHtml).trim().length > 0 ? String(renderedHtml) : textToHtml(renderedText);
 
     setEditorHtml(initialHtml || '');
-    setEditorText(renderedText || '');
-    // RichTextEditor syncs valueHtml -> editor content once mounted.
+    setEditorText(String(renderedText || ''));
     setDirty(false);
     setSaveError(null);
+    setEditorInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contractId, (contract as any)?.id]);
+  }, [editorInitialized, contractId, (contract as any)?.id]);
 
   // If a contract was created from a filesystem template but has empty content, rehydrate content from template + stored inputs.
   useEffect(() => {
@@ -425,6 +510,26 @@ const ContractEditorPageV2: React.FC = () => {
     const html = sanitizeEditorHtml(rawHtml);
     const text = String(rawText || '');
 
+    // Prevent accidental wipes (e.g. editor briefly initializes empty and autosave fires).
+    if (isMeaningfullyEmptyHtml(html) && text.trim().length === 0) {
+      setSaveError('Refusing to auto-save empty content. Type something or refresh if this was unexpected.');
+      return;
+    }
+
+    // Snapshot a monotonic timestamp for this content.
+    const clientUpdatedAtMs = Math.max(Date.now(), lastLocalEditMsRef.current || 0);
+    const seq = ++saveSeqRef.current;
+
+    // Abort any older in-flight save. (Even if the request reached the server,
+    // the backend also rejects stale client_updated_at_ms writes.)
+    try {
+      saveAbortRef.current?.abort();
+    } catch {
+      // ignore
+    }
+    const controller = new AbortController();
+    saveAbortRef.current = controller;
+
     try {
       setSaving(true);
       setSaveError(null);
@@ -432,24 +537,73 @@ const ContractEditorPageV2: React.FC = () => {
       const res = await client.updateContractContent(contractId, {
         rendered_html: html,
         rendered_text: text,
+        client_updated_at_ms: clientUpdatedAtMs,
+      }, {
+        signal: controller.signal,
       });
+
+      // Ignore any response from an older save attempt.
+      if (seq !== saveSeqRef.current) return;
+
       if (res.success) {
-        setContract(res.data as any);
-        setDirty(false);
+        const next = unwrapContractLike(res.data as any);
+        setContract(next as any);
+
+        // Update local snapshot as a durable client-side fallback.
+        writeLocalSnapshot({ html, text, client_updated_at_ms: clientUpdatedAtMs });
+
+        // Let other pages (e.g. contracts list) refresh instantly.
+        try {
+          window.dispatchEvent(
+            new CustomEvent('contracts:changed', {
+              detail: { id: contractId, updated_at: (next as any)?.updated_at || null },
+            })
+          );
+        } catch {
+          // ignore
+        }
+        // Only clear dirty if nothing newer has been typed since this save snapshot.
+        if ((lastLocalEditMsRef.current || 0) <= clientUpdatedAtMs) {
+          setDirty(false);
+        }
       } else {
         setSaveError(res.error || 'Failed to save');
       }
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'Failed to save');
+      // AbortError is expected when typing quickly; don't surface as an error.
+      const msg = e instanceof Error ? e.message : 'Failed to save';
+      if (!String(msg).toLowerCase().includes('abort')) {
+        setSaveError(msg);
+      }
     } finally {
-      setSaving(false);
+      // Only clear saving state if this is the latest save.
+      if (seq === saveSeqRef.current) setSaving(false);
     }
   };
+
+  const saveIfDirty = async () => {
+    if (!dirty) return;
+    // Fire-and-forget is OK; saveNow handles aborting older saves.
+    await saveNow();
+  };
+
+  // Flush changes when tab is backgrounded (user refreshes/closes/navigates).
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState !== 'visible') {
+        void saveIfDirty();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, contractId]);
 
   // Auto-save with a small debounce.
   useEffect(() => {
     if (!editorReady) return;
     if (!dirty) return;
+    if (!editorInitialized) return;
     const t = window.setTimeout(() => {
       saveNow();
     }, 900);
@@ -746,7 +900,13 @@ const ContractEditorPageV2: React.FC = () => {
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4 min-w-0">
             <button
-              onClick={() => router.back()}
+              onClick={async () => {
+                try {
+                  await saveIfDirty();
+                } finally {
+                  router.back();
+                }
+              }}
               className="w-10 h-10 rounded-full bg-white border border-black/10 shadow-sm grid place-items-center text-black/45 hover:text-black"
               aria-label="Back"
             >
@@ -876,8 +1036,18 @@ const ContractEditorPageV2: React.FC = () => {
                   onChange={(html, text) => {
                     setEditorHtml(html);
                     setEditorText(text);
+                    const now = Date.now();
+                    lastLocalEditMsRef.current = now;
                     setDirty(true);
                     setEditTick((t) => t + 1);
+
+                    // Throttled local snapshot write.
+                    if (snapshotTimerRef.current) {
+                      window.clearTimeout(snapshotTimerRef.current);
+                    }
+                    snapshotTimerRef.current = window.setTimeout(() => {
+                      writeLocalSnapshot({ html, text, client_updated_at_ms: now });
+                    }, 250);
                   }}
                   editorClassName="min-h-[60vh] rounded-2xl border border-black/10 bg-white px-5 py-4 text-[13px] leading-6 text-slate-900 font-serif outline-none"
                 />
@@ -1123,9 +1293,46 @@ const ContractEditorPageV2: React.FC = () => {
                         {(signStatus as any).signers.map((s: any) => (
                           <div key={String(s.email)} className="flex items-center justify-between text-xs">
                             <div className="text-black/70 truncate">{String(s.name || s.email)}</div>
-                            <div className="text-black/45">{String(s.status || '')}</div>
+                            {(() => {
+                              const raw = String(s.status || '').trim();
+                              const lower = raw.toLowerCase();
+                              const signedAt = s.signed_at ? String(s.signed_at) : '';
+
+                              const isDeclined = ['declined', 'rejected', 'canceled', 'cancelled', 'refused'].includes(lower);
+                              const isSigned = ['signed', 'completed', 'executed', 'done'].includes(lower) || Boolean(s.has_signed);
+                              const isPending = ['sent', 'invited', 'pending', 'in_progress', 'in progress', 'viewed'].includes(lower);
+
+                              const label = raw || (isSigned ? 'signed' : isDeclined ? 'declined' : isPending ? 'pending' : 'unknown');
+                              const badgeClass = isDeclined
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : isSigned
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : isPending
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : 'bg-slate-50 text-slate-700 border-slate-200';
+
+                              return (
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className={`px-2 py-1 rounded-full border text-[11px] font-semibold ${badgeClass}`}>{label}</span>
+                                  {signedAt ? <span className="text-[11px] text-black/40">{signedAt}</span> : null}
+                                </div>
+                              );
+                            })()}
                           </div>
                         ))}
+
+                        {(() => {
+                          const signersArr = Array.isArray((signStatus as any)?.signers) ? (signStatus as any).signers : [];
+                          const anyDeclined = signersArr.some((x: any) => {
+                            const s = String(x?.status || '').toLowerCase();
+                            return ['declined', 'rejected', 'canceled', 'cancelled', 'refused'].includes(s);
+                          });
+                          return anyDeclined ? (
+                            <div className="mt-2 text-[11px] text-rose-700">
+                              One or more signers declined. Start signing again after updating recipients or document.
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     ) : null}
                   </div>

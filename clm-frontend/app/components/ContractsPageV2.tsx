@@ -29,14 +29,41 @@ const ContractsPageV2: React.FC = () => {
   const [search, setSearch] = useState('');
   const router = useRouter();
 
+  const lastRefreshAtRef = React.useRef<number>(0);
+
   useEffect(() => {
     fetchContracts();
+
+    // Keep list reasonably fresh (edit page updates `updated_at`).
+    // This is intentionally lightweight; "true" realtime would use websockets.
+    const onFocus = () => fetchContracts();
+    window.addEventListener('focus', onFocus);
+
+    const onChanged = () => {
+      const now = Date.now();
+      if (now - lastRefreshAtRef.current < 800) return;
+      lastRefreshAtRef.current = now;
+      fetchContracts();
+    };
+    window.addEventListener('contracts:changed', onChanged as any);
+
+    const interval = window.setInterval(() => {
+      // Avoid unnecessary work when tab is hidden.
+      if (document.visibilityState === 'visible') fetchContracts();
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('contracts:changed', onChanged as any);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const fetchContracts = async () => {
     try {
       setLoading(true);
       setError(null);
+      lastRefreshAtRef.current = Date.now();
       const client = new ApiClient();
       const response = await client.getContracts();
 
@@ -63,6 +90,14 @@ const ContractsPageV2: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatUpdatedLabel = (c: any) => {
+    const iso = c?.updated_at || c?.last_edited_at || c?.created_at;
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString();
   };
 
   const getStatusColor = (status: string) => {
@@ -174,7 +209,7 @@ const ContractsPageV2: React.FC = () => {
                       {String(contract.status).toUpperCase()}
                     </span>
                     <span className="text-xs text-slate-500 hidden sm:inline">
-                      {contract.created_at ? new Date(contract.created_at).toLocaleDateString() : '—'}
+                      {formatUpdatedLabel(contract)}
                     </span>
                     <span className="text-sm font-semibold text-slate-700">View →</span>
                   </div>

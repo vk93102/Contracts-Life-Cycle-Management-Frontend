@@ -754,9 +754,12 @@ export class ApiClient {
 
   async updateContractContent(
     id: string,
-    data: { rendered_text?: string; rendered_html?: string }
+    data: { rendered_text?: string; rendered_html?: string; client_updated_at_ms?: number },
+    opts?: { signal?: AbortSignal }
   ): Promise<ApiResponse<any>> {
-    return this.request('PATCH', `${ApiClient.API_V1_PREFIX}/contracts/${id}/content/`, data)
+    return this.request('PATCH', `${ApiClient.API_V1_PREFIX}/contracts/${id}/content/`, data, undefined, true, {
+      signal: opts?.signal,
+    })
   }
 
   async streamContractAiGenerate(
