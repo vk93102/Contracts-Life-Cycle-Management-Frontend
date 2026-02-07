@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   LogOut,
   Settings,
+  Shield,
   Upload,
 } from 'lucide-react';
 
@@ -114,6 +115,15 @@ const SidebarV2: React.FC<SidebarV2Props> = ({ mobileOpen = false, onMobileOpenC
       activePaths: ['/settings'],
     },
   ];
+
+  if ((user as any)?.is_admin) {
+    navItems.push({
+      name: 'Admin',
+      href: '/admin',
+      icon: <Shield className="w-5 h-5" />,
+      activePaths: ['/admin', '/admin/'],
+    });
+  }
 
   const isActive = (navItem: NavItem): boolean => {
     const paths = navItem.activePaths || [];
@@ -221,7 +231,7 @@ const SidebarV2: React.FC<SidebarV2Props> = ({ mobileOpen = false, onMobileOpenC
             {expanded && (
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">{user?.email || 'Jane Cooper'}</p>
-                <p className="text-white/45 text-xs truncate">Admin</p>
+                <p className="text-white/45 text-xs truncate">{(user as any)?.is_admin ? 'Admin' : 'User'}</p>
               </div>
             )}
             {expanded && (

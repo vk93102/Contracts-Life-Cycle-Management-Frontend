@@ -14,6 +14,8 @@ export interface User {
   email: string
   full_name?: string
   tenant_id?: string
+  is_admin?: boolean
+  is_superadmin?: boolean
 }
 
 export interface AuthResponse {

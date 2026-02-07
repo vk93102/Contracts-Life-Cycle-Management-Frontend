@@ -782,6 +782,41 @@ export class ApiClient {
     return this.request('GET', '/api/auth/me/')
   }
 
+  // ==================== ADMIN ====================
+  async getAdminMe(): Promise<ApiResponse> {
+    return this.request('GET', `${ApiClient.API_V1_PREFIX}/admin/me/`)
+  }
+
+  async getAdminAnalytics(): Promise<ApiResponse> {
+    return this.request('GET', `${ApiClient.API_V1_PREFIX}/admin/analytics/`)
+  }
+
+  async getAdminActivity(params?: { limit?: number }): Promise<ApiResponse> {
+    const limit = params?.limit ?? 50
+    const queryString = limit ? `?${new URLSearchParams({ limit: String(limit) }).toString()}` : ''
+    return this.request('GET', `${ApiClient.API_V1_PREFIX}/admin/activity/${queryString}`)
+  }
+
+  async adminListUsers(params?: { q?: string; allTenants?: boolean }): Promise<ApiResponse> {
+    const qs: Record<string, string> = {}
+    if (params?.q) qs.q = params.q
+    if (params?.allTenants) qs.all_tenants = '1'
+    const queryString = Object.keys(qs).length ? `?${new URLSearchParams(qs).toString()}` : ''
+    return this.request('GET', `${ApiClient.API_V1_PREFIX}/admin/users/${queryString}`)
+  }
+
+  async adminPromoteUser(payload: { user_id?: string; email?: string; allTenants?: boolean }): Promise<ApiResponse> {
+    const queryString = payload.allTenants ? '?all_tenants=1' : ''
+    const { allTenants, ...body } = payload
+    return this.request('POST', `${ApiClient.API_V1_PREFIX}/admin/users/promote/${queryString}`, body)
+  }
+
+  async adminDemoteUser(payload: { user_id?: string; email?: string; allTenants?: boolean }): Promise<ApiResponse> {
+    const queryString = payload.allTenants ? '?all_tenants=1' : ''
+    const { allTenants, ...body } = payload
+    return this.request('POST', `${ApiClient.API_V1_PREFIX}/admin/users/demote/${queryString}`, body)
+  }
+
   // ==================== CONTRACTS ====================
   async createContract(data: Partial<Contract>): Promise<ApiResponse<Contract>> {
     return this.request('POST', `${ApiClient.API_V1_PREFIX}/contracts/`, data)
