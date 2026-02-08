@@ -131,6 +131,30 @@ function normalizeFirmaStatusLabel(value: any): string {
 	return raw;
 }
 
+function isDeclinedStatus(status: any): boolean {
+	const raw = String(status || '').trim().toLowerCase();
+	return ['declined', 'rejected', 'canceled', 'cancelled', 'refused', 'failed', 'error'].includes(raw);
+}
+
+function isSignedStatus(status: any): boolean {
+	const raw = String(status || '').trim().toLowerCase();
+	return ['signed', 'completed', 'executed', 'done', 'finished'].includes(raw);
+}
+
+function signerStatusLabel(s: any): string {
+	const raw = String(s?.status || '').trim();
+	if (raw) return normalizeFirmaStatusLabel(raw);
+	if (s?.has_signed) return 'signed';
+	return 'pending';
+}
+
+function signerStatusTimestamp(s: any): any {
+	const label = String(signerStatusLabel(s) || '').toLowerCase();
+	if (isSignedStatus(label)) return s?.signed_at || s?.signedAt;
+	// For decline/in-progress/viewed, prefer the backend-provided last status update.
+	return s?.status_updated_at || s?.updated_at || s?.updatedAt;
+}
+
 function computeSteps(statusData: any): Record<StepKey, boolean> {
 	const status = String(statusData?.status || '').toLowerCase();
 	const signers = Array.isArray(statusData?.signers) ? statusData.signers : [];
@@ -275,8 +299,10 @@ export default function SigningStatusPage() {
 		if (!contractId) return;
 		try {
 			const client = new ApiClient();
-			const [sRes, dRes, rRes, aRes] = await Promise.all([
-				client.firmaStatus(contractId),
+
+			// Call status FIRST: backend syncs signer states and may write audit logs.
+			const sRes = await client.firmaStatus(contractId);
+			const [dRes, rRes, aRes] = await Promise.all([
 				client.firmaDetails(contractId),
 				client.firmaReminders(contractId),
 				client.firmaActivityLog(contractId, 50),
@@ -545,19 +571,33 @@ export default function SigningStatusPage() {
 
 						<div className="mt-4 space-y-2">
 							{Array.isArray(statusData?.signers) && statusData.signers.length > 0 ? (
-								statusData.signers.map((s: any) => (
-									<div key={String(s.email)} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3">
+								statusData.signers.map((s: any, idx: number) => (
+									<div key={`${String(s.email || 'signer')}-${idx}`} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3">
 										<div className="flex items-center gap-3 min-w-0">
 											<RecipientAvatar name={String(s.name || '')} email={String(s.email || '')} />
 											<div className="min-w-0">
-												<div className="text-sm font-semibold text-slate-900 truncate">{String(s.name || s.email || 'Signer')}</div>
+												<div className="text-sm font-semibold text-slate-900 truncate">{String(s.name || s.email || `Signer ${idx + 1}`)}</div>
 												<div className="text-xs text-slate-500 truncate">{String(s.email || '')}</div>
+												{(() => {
+													const reason = String(s?.declined_reason || s?.reason || '').trim();
+													if (!reason) return null;
+													if (!isDeclinedStatus(signerStatusLabel(s))) return null;
+													return <div className="text-[11px] text-rose-700 mt-0.5 truncate">Reason: {reason}</div>;
+												})()}
 											</div>
 										</div>
 										<div className="flex items-center gap-2 flex-shrink-0">
-											<StatusIcon status={String(s.status || (s.has_signed ? 'signed' : 'pending'))} />
-											<StatusBadge label={normalizeFirmaStatusLabel(String(s.status || (s.has_signed ? 'signed' : 'pending')))} />
-											{s.signed_at ? <span className="text-[11px] text-slate-400">{formatMaybeDate(s.signed_at)}</span> : null}
+											{(() => {
+												const label = signerStatusLabel(s);
+												const ts = signerStatusTimestamp(s);
+												return (
+													<>
+														<StatusIcon status={String(label)} />
+														<StatusBadge label={String(label)} />
+														{ts ? <span className="text-[11px] text-slate-400">{formatMaybeDate(ts)}</span> : null}
+													</>
+												);
+											})()}
 										</div>
 									</div>
 								))
@@ -636,13 +676,6 @@ export default function SigningStatusPage() {
 											<div className="mt-1 text-sm font-semibold text-slate-900 break-all">{requestId ? String(requestId) : '—'}</div>
 										</div>
 										<div className="rounded-xl border border-slate-200 p-3">
-											<div className="text-[11px] text-slate-500">Request status</div>
-											<div className="mt-1 flex items-center gap-2">
-												<StatusIcon status={statusLabel} />
-												<StatusBadge label={statusLabel} />
-											</div>
-										</div>
-										<div className="rounded-xl border border-slate-200 p-3">
 											<div className="text-[11px] text-slate-500">Created</div>
 											<div className="mt-1 text-sm font-semibold text-slate-900">{formatMaybeDate(createdAt)}</div>
 										</div>
@@ -687,7 +720,7 @@ export default function SigningStatusPage() {
 						<div className="flex items-center justify-between">
 							<div>
 								<div className="text-sm font-extrabold text-slate-900">Activity</div>
-								<div className="text-xs text-slate-500 mt-1">Live updates via SSE + polling.</div>
+								<div className="text-xs text-slate-500 mt-1">Signer-level events (audit log) + live SSE.</div>
 							</div>
 							<button
 								type="button"
@@ -699,7 +732,24 @@ export default function SigningStatusPage() {
 						</div>
 
 						<div className="mt-4 space-y-3 max-h-[60vh] overflow-auto">
-							{events.length > 0 ? (
+							{Array.isArray(activity) && activity.length > 0 ? (
+								activity.map((row: any) => (
+									<div key={String(row.id || row.created_at || Math.random())} className="rounded-2xl border border-slate-200 p-3">
+										<div className="text-xs text-slate-500">{formatMaybeDate(row.created_at)}</div>
+										<div className="mt-1 flex items-center justify-between gap-2">
+											<div className="text-sm font-semibold text-slate-900 truncate">{String(row.event || 'event')}</div>
+											{row.new_status ? <StatusBadge label={normalizeFirmaStatusLabel(String(row.new_status))} /> : null}
+										</div>
+										{row.signer ? (
+											<div className="mt-1 text-xs text-slate-700 truncate">
+												Signer: <span className="font-semibold">{String(row.signer.name || row.signer.email || '')}</span>
+												{row.signer.email ? <span className="text-slate-500"> · {String(row.signer.email)}</span> : null}
+											</div>
+										) : null}
+										{row.message ? <div className="mt-1 text-xs text-slate-700 break-words">{String(row.message)}</div> : null}
+									</div>
+								))
+							) : events.length > 0 ? (
 								events.map((e, i) => (
 									<div key={`${e.ts}-${i}`} className="rounded-2xl border border-slate-200 p-3">
 										<div className="text-xs text-slate-500">{new Date(e.ts).toLocaleString()}</div>
