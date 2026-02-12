@@ -829,6 +829,11 @@ export class ApiClient {
     return this.request('GET', `${ApiClient.API_V1_PREFIX}/admin/user-feature-usage/`)
   }
 
+  // ==================== DASHBOARD ====================
+  async getDashboardInsights(): Promise<ApiResponse> {
+    return this.request('GET', `${ApiClient.API_V1_PREFIX}/dashboard/insights/`)
+  }
+
   // ==================== CONTRACTS ====================
   async createContract(data: Partial<Contract>): Promise<ApiResponse<Contract>> {
     return this.request('POST', `${ApiClient.API_V1_PREFIX}/contracts/`, data)

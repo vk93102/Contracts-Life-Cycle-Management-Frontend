@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/lib/auth-context';
 import {
-  BarChart3,
   CalendarDays,
   CheckSquare,
   FileCheck2,
@@ -14,9 +13,9 @@ import {
   Files,
   LayoutGrid,
   LogOut,
-  Settings,
   Shield,
   Upload,
+  ChevronRight,
 } from 'lucide-react';
 
 interface NavItem {
@@ -101,18 +100,6 @@ const SidebarV2: React.FC<SidebarV2Props> = ({ mobileOpen = false, onMobileOpenC
       href: '/calendar',
       icon: <CalendarDays className="w-5 h-5" />,
       activePaths: ['/calendar'],
-    },
-    {
-      name: 'Analytics',
-      href: '/analytics',
-      icon: <BarChart3 className="w-5 h-5" />,
-      activePaths: ['/analytics'],
-    },
-    {
-      name: 'Settings',
-      href: '/settings',
-      icon: <Settings className="w-5 h-5" />,
-      activePaths: ['/settings'],
     },
   ];
 
@@ -225,15 +212,27 @@ const SidebarV2: React.FC<SidebarV2Props> = ({ mobileOpen = false, onMobileOpenC
                 : 'flex justify-center py-3'
             } transition`}
           >
-            <div className="w-10 h-10 rounded-full bg-[#1F2937] flex items-center justify-center text-white font-semibold flex-shrink-0">
-              {(user?.email?.[0] || 'J').toUpperCase()}
-            </div>
-            {expanded && (
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium truncate">{user?.email || 'Jane Cooper'}</p>
-                <p className="text-white/45 text-xs truncate">{(user as any)?.is_admin ? 'Admin' : 'User'}</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (isMobile) onMobileOpenChange?.(false);
+                router.push('/settings');
+              }}
+              className={`${expanded ? 'flex items-center gap-3 flex-1 min-w-0' : 'flex items-center'} rounded-2xl hover:bg-white/5 transition px-2 py-1.5`}
+              aria-label="Open profile"
+              title="Profile"
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF5C7A] to-[#8B5CF6] flex items-center justify-center text-white font-semibold flex-shrink-0 ring-1 ring-white/10">
+                {(user?.email?.[0] || 'U').toUpperCase()}
               </div>
-            )}
+              {expanded && (
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-white text-sm font-medium truncate">{user?.email || 'User'}</p>
+                  <p className="text-white/45 text-xs truncate">{(user as any)?.is_admin ? 'Admin' : 'User'}</p>
+                </div>
+              )}
+              {expanded && <ChevronRight className="w-4 h-4 text-white/40 flex-shrink-0" />}
+            </button>
             {expanded && (
               <button
                 onClick={handleLogout}
