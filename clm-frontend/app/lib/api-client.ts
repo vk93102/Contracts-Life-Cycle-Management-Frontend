@@ -1602,7 +1602,7 @@ export class ApiClient {
     })
   }
 
-  // ==================== FILE-BASED TEMPLATES (NO DB) ====================
+  // ==================== DB-BACKED TEMPLATE FILES ====================
   async listTemplateFiles(): Promise<ApiResponse<{ success: boolean; count: number; results: FileTemplateItem[] }>> {
     return this.request('GET', `${ApiClient.API_V1_PREFIX}/templates/files/`)
   }
@@ -1613,6 +1613,11 @@ export class ApiClient {
 
   async listMyTemplateFiles(): Promise<ApiResponse<{ success: boolean; count: number; results: FileTemplateItem[] }>> {
     return this.request('GET', `${ApiClient.API_V1_PREFIX}/templates/files/mine/`)
+  }
+
+  async deleteTemplateFile(filename: string): Promise<ApiResponse<{ success: boolean; filename?: string }>> {
+    const safe = encodeURIComponent(filename)
+    return this.request('DELETE', `${ApiClient.API_V1_PREFIX}/templates/files/delete/${safe}/`)
   }
 
   async getTemplateFileContent(filename: string): Promise<ApiResponse<FileTemplateContentResponse>> {

@@ -7,6 +7,7 @@ import {
   ChevronDown,
   Download,
   FileText,
+  Trash2,
   Minus,
   MoreVertical,
   PlusCircle,
@@ -184,6 +185,41 @@ const TemplateLibrary: React.FC = () => {
       setMyTemplatesCount(typeof count === 'number' ? count : ((res.data as any)?.results || []).length);
     } catch {
       setMyTemplatesCount(0);
+    }
+  };
+
+  const canDeleteTemplate = (t: Template | null) => {
+    if (!user || !t) return false;
+    const uid = String((user as any).user_id || '');
+    const email = String((user as any).email || '').toLowerCase();
+    const createdById = String((t as any).created_by_id || '');
+    const createdByEmail = String((t as any).created_by_email || '').toLowerCase();
+    return Boolean((uid && createdById && uid === createdById) || (email && createdByEmail && email === createdByEmail));
+  };
+
+  const deleteSelectedTemplate = async () => {
+    if (!user || !selectedTemplate) return;
+    if (!canDeleteTemplate(selectedTemplate)) {
+      setError('You can only delete templates you created.');
+      return;
+    }
+    const ok = window.confirm(`Delete "${selectedTemplate.name}"? This cannot be undone.`);
+    if (!ok) return;
+
+    try {
+      setError(null);
+      const client = new ApiClient();
+      const res = await client.deleteTemplateFile(selectedTemplate.filename);
+      if (!res.success) {
+        setError(res.error || 'Failed to delete template');
+        return;
+      }
+      setSelectedTemplate(null);
+      setRawTemplateDoc('');
+      await fetchTemplates();
+      await fetchMyTemplatesCount();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete template');
     }
   };
 
@@ -427,6 +463,8 @@ const TemplateLibrary: React.FC = () => {
           <div className="rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 text-white p-6 relative overflow-hidden">
             <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 80% 30%, #fff 0 2px, transparent 3px)' }} />
             <p className="text-white/90 text-sm">Total Templates</p>
+            <p className="text-4xl font-black mt-3">{String(templates.length).padStart(2, '0')}</p>
+            <p className="text-xs text-white/80 mt-2">In your library</p>
           </div>
 
           <div className="rounded-2xl bg-white border border-slate-200 p-6">
@@ -584,6 +622,19 @@ const TemplateLibrary: React.FC = () => {
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={deleteSelectedTemplate}
+                    disabled={!selectedTemplate || !canDeleteTemplate(selectedTemplate)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-slate-700 border border-slate-200 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
+                    title={canDeleteTemplate(selectedTemplate) ? 'Delete this template' : 'Only templates you created can be deleted'}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </button>
+
                 <div className="relative flex items-center gap-2" data-download-menu>
                   <button
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
@@ -626,6 +677,7 @@ const TemplateLibrary: React.FC = () => {
                       </button>
                     </div>
                   )}
+                </div>
                 </div>
               </div>
 
@@ -723,9 +775,7 @@ const TemplateLibrary: React.FC = () => {
                   className="mt-2 w-full min-h-[180px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-rose-200 font-mono"
                   placeholder="Paste the exact template text (.txt) you want to display"
                 />
-                <p className="text-xs text-slate-500 mt-2">
-                  Saved as a new <span className="font-semibold">.txt</span> file in the backend templates folder (no database).
-                </p>
+                <p className="text-xs text-slate-500 mt-2">Saved to your template library.</p>
               </div>
             </div>
 
