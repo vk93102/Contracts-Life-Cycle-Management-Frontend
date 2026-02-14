@@ -209,7 +209,7 @@ export default function RichTextEditor({
       title={label}
       onClick={onClick}
       disabled={disabled}
-      className={`h-9 w-9 rounded-full border transition grid place-items-center ${
+      className={`h-8 w-8 sm:h-9 sm:w-9 rounded-full border transition grid place-items-center ${
         active ? toolbarButtonActiveClass : toolbarButtonIdleClass
       } disabled:opacity-60`}
     >
@@ -294,7 +294,7 @@ export default function RichTextEditor({
         }`}
       >
         <div
-          className={`inline-flex flex-wrap items-center gap-2 rounded-full border px-3 py-2 shadow-sm ${toolbarShellClass} ${
+          className={`w-full sm:w-auto flex flex-nowrap sm:flex-wrap items-center justify-start gap-2 rounded-2xl sm:rounded-full border px-3 py-2 shadow-sm overflow-x-auto sm:overflow-visible ${toolbarShellClass} ${
             toolbarPlacement === 'floating' ? 'mx-auto' : ''
           }`}
         >
@@ -313,7 +313,7 @@ export default function RichTextEditor({
             <Redo2 className="w-4 h-4" />
           </ToolbarIconButton>
 
-          <div className={`w-px h-6 ${toolbarIsDark ? 'bg-white/15' : 'bg-black/10'} mx-1`} />
+          <div className={`w-px h-6 ${toolbarIsDark ? 'bg-white/15' : 'bg-black/10'} mx-1 flex-none`} />
 
           <ToolbarIconButton
             label="Bold"
@@ -340,12 +340,12 @@ export default function RichTextEditor({
             <UnderlineIcon className="w-4 h-4" />
           </ToolbarIconButton>
 
-          <div className={`w-px h-6 ${toolbarIsDark ? 'bg-white/15' : 'bg-black/10'} mx-1`} />
+          <div className={`w-px h-6 ${toolbarIsDark ? 'bg-white/15' : 'bg-black/10'} mx-1 flex-none`} />
 
-          <div className={`h-9 rounded-full border px-3 flex items-center gap-2 ${toolbarIsDark ? 'border-white/10 bg-transparent' : 'border-black/10 bg-white'}`}>
+          <div className={`h-8 sm:h-9 rounded-full border px-3 flex items-center gap-2 flex-none ${toolbarIsDark ? 'border-white/10 bg-transparent' : 'border-black/10 bg-white'}`}>
             <Type className={`w-4 h-4 ${toolbarIsDark ? 'text-white/75' : 'text-black/45'}`} />
             <select
-              className={`h-9 bg-transparent text-sm outline-none ${toolbarIsDark ? 'text-white' : 'text-black/70'}`}
+              className={`h-8 sm:h-9 bg-transparent text-xs sm:text-sm outline-none ${toolbarIsDark ? 'text-white' : 'text-black/70'}`}
               value={
                 editor?.isActive('heading', { level: 1 })
                   ? 'h1'
@@ -373,7 +373,7 @@ export default function RichTextEditor({
             </select>
           </div>
 
-          <div className={`w-px h-6 ${toolbarIsDark ? 'bg-white/15' : 'bg-black/10'} mx-1`} />
+          <div className={`w-px h-6 ${toolbarIsDark ? 'bg-white/15' : 'bg-black/10'} mx-1 flex-none`} />
 
           <ToolbarIconButton
             label="Bulleted list"

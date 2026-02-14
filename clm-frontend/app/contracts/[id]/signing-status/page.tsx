@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { CheckCircle2, Clock3, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock3, Copy, XCircle } from 'lucide-react';
 import DashboardLayout from '../../../components/DashboardLayout';
 import { ApiClient } from '../../../lib/api-client';
 
@@ -26,6 +26,59 @@ function formatMaybeDate(value: any): string {
 	const d = new Date(String(value));
 	if (Number.isNaN(d.getTime())) return String(value);
 	return d.toLocaleString();
+}
+
+function formatShortId(value: string | null | undefined): { short: string; full: string } {
+	const full = String(value || '').trim();
+	if (!full) return { short: '—', full: '' };
+	if (full.length <= 18) return { short: full, full };
+	return { short: `${full.slice(0, 8)}…${full.slice(-6)}`, full };
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+	try {
+		if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+			await navigator.clipboard.writeText(text);
+			return true;
+		}
+	} catch {
+		// ignore
+	}
+	try {
+		const el = document.createElement('textarea');
+		el.value = text;
+		el.setAttribute('readonly', 'true');
+		el.style.position = 'fixed';
+		el.style.left = '-9999px';
+		document.body.appendChild(el);
+		el.select();
+		const ok = document.execCommand('copy');
+		el.remove();
+		return ok;
+	} catch {
+		return false;
+	}
+}
+
+function titleCaseName(value: string): string {
+	const raw = String(value || '').trim();
+	if (!raw) return '';
+	if (raw.includes('@')) return raw;
+	const parts = raw.split(/\s+/).filter(Boolean);
+	return parts
+		.map((p) => {
+			if (!/^[a-zA-Z]+$/.test(p)) return p;
+			return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+		})
+		.join(' ');
+}
+
+function signerDisplayName(s: any, idx: number): string {
+	const name = titleCaseName(String(s?.name || '').trim());
+	if (name) return name;
+	const email = String(s?.email || '').trim();
+	if (email) return email;
+	return `Signer ${idx + 1}`;
 }
 
 function pickFirst(obj: any, keys: string[]): any {
@@ -235,6 +288,20 @@ function TrackingStepper(props: {
 	);
 }
 
+function TrackingStepperMobile(props: {
+	steps: Record<StepKey, boolean>;
+	meta: Partial<Record<StepKey, { subtitle?: string }>>;
+}) {
+	return (
+		<div className="mt-4 space-y-3">
+			<StepPill title="Invite Sent" active={!!props.steps.invite_sent} subtitle={props.meta.invite_sent?.subtitle} />
+			<StepPill title="Recipient Received" active={!!props.steps.recipient_received} subtitle={props.meta.recipient_received?.subtitle} />
+			<StepPill title="Signature Pending" active={!!props.steps.signature_pending} subtitle={props.meta.signature_pending?.subtitle} />
+			<StepPill title="Completed" active={!!props.steps.completed} subtitle={props.meta.completed?.subtitle} />
+		</div>
+	);
+}
+
 export default function SigningStatusPage() {
 	const params = useParams<{ id: string }>();
 	const router = useRouter();
@@ -259,6 +326,7 @@ export default function SigningStatusPage() {
 	const [liveState, setLiveState] = useState<'disconnected' | 'connected' | 'error'>('disconnected');
 	const [lastEventTs, setLastEventTs] = useState<number | null>(null);
 	const [lastRefreshMs, setLastRefreshMs] = useState<number | null>(null);
+	const [copiedIdAt, setCopiedIdAt] = useState<number | null>(null);
 	const streamCloseRef = useRef<null | (() => void)>(null);
 	const pollRef = useRef<number | null>(null);
 
@@ -294,6 +362,8 @@ export default function SigningStatusPage() {
 		const raw = String(displayTitle || contractId || 'contract').trim();
 		return raw.replace(/\s+/g, '_');
 	}, [displayTitle, contractId]);
+
+	const formattedContractId = useMemo(() => formatShortId(contractId), [contractId]);
 
 	const refreshAll = async () => {
 		if (!contractId) return;
@@ -460,10 +530,10 @@ export default function SigningStatusPage() {
 
 	return (
 		<DashboardLayout>
-			<div className="flex items-center justify-between gap-4 mb-6">
+			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
 				<div className="min-w-0">
 					<div className="flex items-center gap-3 flex-wrap">
-						<h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 truncate">{displayTitle || 'Signing status'}</h1>
+						<h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 break-words sm:truncate">{displayTitle || 'Signing status'}</h1>
 						{(() => {
 							const statusLabel = declined
 								? 'DECLINED'
@@ -486,21 +556,42 @@ export default function SigningStatusPage() {
 							);
 						})()}
 					</div>
-					<div className="mt-1 text-xs text-slate-500">
-						{contractId ? `ID: ${contractId}` : null}
-						{lastRefreshMs ? ` · Last update: ${formatRelative(Date.now() - lastRefreshMs)}` : null}
-						{lastEventTs ? ` · Last event: ${new Date(lastEventTs).toLocaleTimeString()}` : null}
+					<div className="mt-1 text-xs text-slate-500 space-y-0.5">
+						{contractId ? (
+							<div className="flex items-center gap-2 flex-wrap">
+								<span className="font-semibold text-slate-600">ID:</span>
+								<button
+									type="button"
+									onClick={() => {
+										void copyToClipboard(String(contractId)).then((ok) => {
+											if (ok) setCopiedIdAt(Date.now());
+										});
+									}}
+									className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-mono text-slate-700 hover:bg-slate-50 max-w-full"
+									title={formattedContractId.full}
+								>
+									<Copy className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" aria-hidden="true" />
+									<span className="break-all">{formattedContractId.short}</span>
+								</button>
+								{copiedIdAt && Date.now() - copiedIdAt < 2000 ? <span className="text-[11px] text-emerald-700 font-semibold">Copied</span> : null}
+							</div>
+						) : null}
+						<div className="flex flex-wrap gap-x-2 gap-y-1">
+							{lastRefreshMs ? <span>Last update: {formatRelative(Date.now() - lastRefreshMs)}</span> : null}
+							{lastEventTs ? <span>· Last event: {new Date(lastEventTs).toLocaleTimeString()}</span> : null}
+						</div>
 					</div>
 				</div>
 
-				<div className="flex items-center gap-2">
+				<div className="w-full sm:w-auto">
+					<div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-2">
 					{steps.completed ? (
 						<>
 						<button
 							type="button"
 							onClick={() => void downloadExecuted()}
 							disabled={downloading}
-							className="h-10 px-4 rounded-full bg-[#0F141F] text-white text-sm font-semibold disabled:opacity-60"
+							className="col-span-3 sm:col-span-auto h-9 sm:h-10 px-4 rounded-full bg-[#0F141F] text-white text-xs sm:text-sm font-semibold disabled:opacity-60"
 						>
 							{downloading ? 'Downloading…' : 'Download signed PDF'}
 						</button>
@@ -508,7 +599,7 @@ export default function SigningStatusPage() {
 							type="button"
 							onClick={() => void downloadCertificate()}
 							disabled={downloadingCert}
-							className="h-10 px-4 rounded-full bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+							className="col-span-3 sm:col-span-auto h-9 sm:h-10 px-4 rounded-full bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
 						>
 							{downloadingCert ? 'Downloading…' : 'Certificate'}
 						</button>
@@ -517,14 +608,14 @@ export default function SigningStatusPage() {
 					<button
 						type="button"
 						onClick={() => router.push(`/contracts/${contractId}`)}
-						className="h-10 px-4 rounded-full bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+						className="col-span-1 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50"
 					>
 						Back
 					</button>
 					<button
 						type="button"
 						onClick={() => void refreshAll()}
-						className="h-10 px-4 rounded-full bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+						className="col-span-1 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50"
 					>
 						Refresh
 					</button>
@@ -532,11 +623,13 @@ export default function SigningStatusPage() {
 						type="button"
 						onClick={() => void resendInvites()}
 						disabled={steps.completed}
-						className="h-10 px-4 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 disabled:opacity-60"
+						className="col-span-1 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-rose-500 text-white text-xs sm:text-sm font-semibold hover:bg-rose-600 disabled:opacity-60"
 						title={steps.completed ? 'Already completed' : 'Resend signing notifications'}
 					>
-						Resend notifications
+						<span className="hidden sm:inline">Resend notifications</span>
+						<span className="sm:hidden">Resend</span>
 					</button>
+					</div>
 				</div>
 			</div>
 
@@ -545,25 +638,38 @@ export default function SigningStatusPage() {
 
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				<div className="lg:col-span-2 space-y-6">
-					<div className="bg-white rounded-3xl border border-slate-200 p-6">
+					<div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6">
 						<div className="text-sm font-extrabold text-slate-900">Signature Tracking</div>
 						{declined ? (
 							<div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
 								A recipient declined the signing request. You can update recipients and click “Resend notifications”.
 							</div>
 						) : null}
-						<TrackingStepper
-							steps={steps}
-							meta={{
-								invite_sent: { subtitle: '' },
-								recipient_received: { subtitle: '' },
-								signature_pending: { subtitle: 'In progress' },
-								completed: { subtitle: steps.completed ? 'Done' : 'Awaiting' },
-							}}
-						/>
+						<div className="sm:hidden">
+							<TrackingStepperMobile
+								steps={steps}
+								meta={{
+									invite_sent: { subtitle: '' },
+									recipient_received: { subtitle: '' },
+									signature_pending: { subtitle: 'In progress' },
+									completed: { subtitle: steps.completed ? 'Done' : 'Awaiting' },
+								}}
+							/>
+						</div>
+						<div className="hidden sm:block">
+							<TrackingStepper
+								steps={steps}
+								meta={{
+									invite_sent: { subtitle: '' },
+									recipient_received: { subtitle: '' },
+									signature_pending: { subtitle: 'In progress' },
+									completed: { subtitle: steps.completed ? 'Done' : 'Awaiting' },
+								}}
+							/>
+						</div>
 					</div>
 
-					<div className="bg-white rounded-3xl border border-slate-200 p-6">
+					<div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6">
 						<div className="flex items-center justify-between">
 							<div className="text-sm font-extrabold text-slate-900">Recipients</div>
 							<div className="text-xs text-slate-500">{Array.isArray(statusData?.signers) ? `${statusData.signers.length} signers` : '—'}</div>
@@ -572,12 +678,14 @@ export default function SigningStatusPage() {
 						<div className="mt-4 space-y-2">
 							{Array.isArray(statusData?.signers) && statusData.signers.length > 0 ? (
 								statusData.signers.map((s: any, idx: number) => (
-									<div key={`${String(s.email || 'signer')}-${idx}`} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3">
+									<div key={`${String(s.email || 'signer')}-${idx}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-slate-200 p-3">
 										<div className="flex items-center gap-3 min-w-0">
 											<RecipientAvatar name={String(s.name || '')} email={String(s.email || '')} />
 											<div className="min-w-0">
-												<div className="text-sm font-semibold text-slate-900 truncate">{String(s.name || s.email || `Signer ${idx + 1}`)}</div>
-												<div className="text-xs text-slate-500 truncate">{String(s.email || '')}</div>
+												<div className="text-sm font-semibold text-slate-900 break-words leading-snug">
+													{signerDisplayName(s, idx)}
+												</div>
+												{s?.email ? <div className="text-xs text-slate-500 break-all leading-snug">{String(s.email || '')}</div> : null}
 												{(() => {
 													const reason = String(s?.declined_reason || s?.reason || '').trim();
 													if (!reason) return null;
@@ -586,7 +694,7 @@ export default function SigningStatusPage() {
 												})()}
 											</div>
 										</div>
-										<div className="flex items-center gap-2 flex-shrink-0">
+										<div className="flex flex-wrap items-center gap-2 sm:justify-end">
 											{(() => {
 												const label = signerStatusLabel(s);
 												const ts = signerStatusTimestamp(s);
@@ -594,7 +702,7 @@ export default function SigningStatusPage() {
 													<>
 														<StatusIcon status={String(label)} />
 														<StatusBadge label={String(label)} />
-														{ts ? <span className="text-[11px] text-slate-400">{formatMaybeDate(ts)}</span> : null}
+														{ts ? <span className="text-[11px] text-slate-400 w-full sm:w-auto">{formatMaybeDate(ts)}</span> : null}
 													</>
 												);
 											})()}
