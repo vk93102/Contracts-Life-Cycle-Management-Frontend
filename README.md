@@ -27,6 +27,7 @@ A production-ready Next.js frontend featuring:
 - 📱 **Fully responsive** mobile & desktop
 - 🚀 **Static export** support (Cloudflare Pages)
 - ♿ **Accessible** components
+- Please visit the backend folder for complete project: https://github.com/vk93102/Contracts-Life-Cycle-Management-Backend
 
 ---
 
