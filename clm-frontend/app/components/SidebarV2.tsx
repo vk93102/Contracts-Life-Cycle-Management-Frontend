@@ -156,7 +156,7 @@ const SidebarV2: React.FC<SidebarV2Props> = ({ mobileOpen = false, onMobileOpenC
             </div>
             {expanded && (
               <div className="flex flex-col">
-                <span className="text-white font-bold text-base whitespace-nowrap">ContractFlow</span>
+                <span className="text-white font-bold text-base whitespace-nowrap">LawFlow</span>
                 <span className="text-slate-400 text-xs whitespace-nowrap">Workspace</span>
               </div>
             )}

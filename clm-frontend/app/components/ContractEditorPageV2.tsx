@@ -803,19 +803,16 @@ const ContractEditorPageV2: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="bg-[#F2F0EB]">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+      <div className="space-y-6">
+
+        {/* ── HEADER ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={async () => {
-                try {
-                  await saveIfDirty();
-                } finally {
-                  router.back();
-                }
+                try { await saveIfDirty(); } finally { router.back(); }
               }}
-              className="w-10 h-10 rounded-full bg-white border border-black/10 shadow-sm grid place-items-center text-black/45 hover:text-black"
+              className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:border-slate-300 transition shrink-0"
               aria-label="Back"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -824,119 +821,91 @@ const ContractEditorPageV2: React.FC = () => {
             </button>
 
             <div className="min-w-0">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0">
-                <h1 className="text-xl md:text-2xl font-bold text-[#111827] truncate">{title}</h1>
-                {updatedAt && (
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-xs text-black/45 font-medium">
-                      {saving ? 'Saving…' : dirty ? 'Unsaved changes' : `Updated ${updatedAt}`}
-                    </span>
-                  </div>
-                )}
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
+                <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 truncate">{title}</h1>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border shrink-0 ${
+                  saving
+                    ? 'bg-blue-50 text-blue-600 border-blue-200'
+                    : dirty
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${saving ? 'bg-blue-400 animate-pulse' : dirty ? 'bg-amber-400' : 'bg-emerald-500'}`} />
+                  {saving ? 'Saving…' : dirty ? 'Unsaved' : updatedAt ? `Saved` : 'Saved'}
+                </span>
               </div>
-              <p className="text-xs text-black/40 mt-1 truncate">Contract ID: {String(contractId || '')}</p>
-              {saveError && <p className="text-xs text-rose-600 mt-1">{saveError}</p>}
+              <p className="text-xs text-slate-400 mt-0.5 truncate font-mono">ID: {contractId}</p>
+              {saveError && <p className="text-xs text-red-500 mt-1">{saveError}</p>}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={openSigningModal}
+              className="h-9 px-4 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold hover:border-slate-300 hover:bg-slate-50 transition"
+              type="button"
+            >
+              Send for signature
+            </button>
+            <button
+              onClick={downloadPdf}
+              className="h-9 px-4 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
+              type="button"
+            >
+              Download PDF
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setMoreOpen((v) => !v)}
+                className="w-9 h-9 rounded-2xl hover:bg-slate-100 flex items-center justify-center text-slate-500 transition"
+                aria-label="More options"
+                type="button"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
+              {moreOpen && (
+                <div className="absolute right-0 top-11 w-48 bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden z-20">
+                  <button onClick={() => { setMoreOpen(false); downloadPdf(); }} className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50" type="button">Download PDF</button>
+                  <button onClick={() => { setMoreOpen(false); downloadTxt(); }} className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50" type="button">Download TXT</button>
+                  <button onClick={() => { setMoreOpen(false); void saveNow(); }} className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50" type="button">Save now</button>
+                  <div className="h-px bg-slate-100" />
+                  <button onClick={() => { setMoreOpen(false); void deleteContract(); }} className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50" type="button">Delete contract</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm">
             {error}
           </div>
         )}
 
+        {/* ── MAIN GRID ── */}
         <div className="grid grid-cols-12 gap-6">
-          {/* Editor */}
-          <section className="col-span-12 lg:col-span-8 bg-white rounded-[28px] border border-black/5 shadow-sm overflow-hidden">
-            <div className="px-4 sm:px-6 pt-5 pb-4 border-b border-black/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="text-sm font-semibold text-[#111827]">Editor</div>
-              <div className="w-full sm:w-auto">
-                <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-2 relative justify-start sm:justify-end">
-                <button
-                  onClick={openSigningModal}
-                  className="col-span-1 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white border border-black/10 text-[#0F141F] text-xs sm:text-sm font-semibold hover:bg-black/5"
-                  type="button"
-                >
-                  <span className="hidden sm:inline">Send for signature</span>
-                  <span className="sm:hidden">Send</span>
-                </button>
-                <button
-                  onClick={downloadPdf}
-                  className="col-span-1 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-[#0F141F] text-white text-xs sm:text-sm font-semibold"
-                  type="button"
-                >
-                  <span className="hidden sm:inline">Download</span>
-                  <span className="sm:hidden">PDF</span>
-                </button>
-                <button
-                  onClick={() => setMoreOpen((v) => !v)}
-                  className="col-span-1 w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-black/5 text-black/45 justify-self-end"
-                  aria-label="More"
-                  type="button"
-                >
-                  <svg className="w-6 h-6 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                  </svg>
-                </button>
 
-                {moreOpen && (
-                  <div className="absolute right-0 top-12 w-48 bg-white rounded-2xl border border-black/10 shadow-lg overflow-hidden z-20">
-                    <button
-                      onClick={() => {
-                        setMoreOpen(false);
-                        downloadPdf();
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-black/5"
-                      type="button"
-                    >
-                      Download PDF
-                    </button>
-                    <button
-                      onClick={() => {
-                        setMoreOpen(false);
-                        downloadTxt();
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-black/5"
-                      type="button"
-                    >
-                      Download TXT
-                    </button>
-                    <button
-                      onClick={() => {
-                        setMoreOpen(false);
-                        saveNow();
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-black/5"
-                      type="button"
-                    >
-                      Save now
-                    </button>
-                    <div className="h-px bg-black/5" />
-                    <button
-                      onClick={() => {
-                        setMoreOpen(false);
-                        deleteContract();
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50"
-                      type="button"
-                    >
-                      Delete contract
-                    </button>
-                  </div>
-                )}
-                </div>
-              </div>
+          {/* ── EDITOR PANEL ── */}
+          <section className="col-span-12 lg:col-span-8 bg-white rounded-3xl border border-slate-200 overflow-hidden">
+            <div className="px-6 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between gap-3">
+              <p className="text-sm font-extrabold text-slate-800">Editor</p>
+              {rehydrating && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+                  <span className="w-3 h-3 rounded-full border-2 border-blue-300 border-t-transparent animate-spin" />
+                  Restoring template…
+                </span>
+              )}
             </div>
-
-            <div className="px-4 sm:px-6 py-5 sm:py-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+            <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
               {loading ? (
-                <div className="text-sm text-black/45">Loading contract…</div>
+                <div className="flex items-center gap-2 text-sm text-slate-400">
+                  <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+                  Loading contract…
+                </div>
               ) : !contract ? (
-                <div className="text-sm text-black/45">No contract found.</div>
-              ) : rehydrating ? (
-                <div className="text-sm text-black/45">Restoring template content…</div>
+                <p className="text-sm text-slate-400">No contract found.</p>
               ) : (
                 <RichTextEditor
                   valueHtml={editorHtml}
@@ -952,8 +921,6 @@ const ContractEditorPageV2: React.FC = () => {
                     lastLocalEditMsRef.current = now;
                     setDirty(true);
                     setEditTick((t) => t + 1);
-
-                    // Throttled local snapshot write.
                     if (snapshotTimerRef.current) {
                       window.clearTimeout(snapshotTimerRef.current);
                     }
@@ -961,140 +928,147 @@ const ContractEditorPageV2: React.FC = () => {
                       writeLocalSnapshot({ html, text, client_updated_at_ms: now });
                     }, 250);
                   }}
-                  editorClassName="min-h-[60vh] rounded-2xl border border-black/10 bg-white px-5 py-4 text-[13px] leading-6 text-slate-900 font-serif outline-none"
+                  editorClassName="min-h-[60vh] rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[13px] leading-6 text-slate-900 font-serif outline-none"
                 />
               )}
             </div>
           </section>
 
-          {/* Right Panel */}
-          <aside className="col-span-12 lg:col-span-4 space-y-6">
-            <div className="bg-white rounded-[28px] border border-black/5 shadow-sm overflow-hidden">
-              <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-black/5">
-                <p className="text-sm font-semibold text-[#111827]">Add Template</p>
-                <p className="text-xs text-black/45 mt-1">Insert a template into the editor, then edit manually.</p>
+          {/* ── RIGHT PANEL ── */}
+          <aside className="col-span-12 lg:col-span-4 space-y-4">
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
+              <div className="px-6 pt-5 pb-4 border-b border-slate-100">
+                <p className="text-sm font-extrabold text-slate-800">Add Template</p>
+                <p className="text-xs text-slate-400 mt-1">Applying a template replaces current editor content.</p>
               </div>
-              <div className="p-4 sm:p-5">
-                <div className="flex items-center gap-2 bg-[#F6F3ED] rounded-full px-4 py-2">
-                  <svg className="w-4 h-4 text-black/35" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-5 space-y-4">
+                <div className="relative">
+                  <svg className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   <input
-                    className="bg-transparent outline-none text-sm w-full"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="Search templates…"
                     value={templateSearch}
                     onChange={(e) => setTemplateSearch(e.target.value)}
                   />
                 </div>
 
-                <div className="mt-3">
-                  <div className="text-xs text-black/45 font-semibold">Applying a template replaces the editor content.</div>
-                </div>
+                {templatesError && <p className="text-xs text-red-500">{templatesError}</p>}
 
-                {templatesError && <div className="text-xs text-rose-600 mt-3">{templatesError}</div>}
-
-                <div className="mt-4 space-y-3 max-h-[38vh] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[38vh] overflow-y-auto pr-0.5">
                   {templatesLoading ? (
-                    <div className="text-sm text-black/45">Loading templates…</div>
+                    <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
+                      <div className="w-4 h-4 rounded-full border-2 border-blue-300 border-t-transparent animate-spin" />
+                      Loading templates…
+                    </div>
                   ) : filteredTemplates.length === 0 ? (
-                    <div className="text-sm text-black/45">No templates found.</div>
+                    <p className="text-sm text-slate-400 py-2">No templates found.</p>
                   ) : (
                     filteredTemplates.map((t) => (
-                      <div key={t.filename} className="rounded-2xl border border-black/5 bg-[#F6F3ED] p-4">
+                      <div key={t.filename} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-[#111827] truncate">{t.name}</p>
-                            <p className="text-[11px] text-black/45 mt-1 truncate">{t.filename}</p>
-                            {t.mine ? <p className="text-[10px] mt-1 font-bold tracking-wider text-[#FF5C7A]">MY TEMPLATE</p> : null}
+                            <p className="text-sm font-semibold text-slate-900 truncate">{t.name}</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5 truncate font-mono">{t.filename}</p>
+                            {t.mine && (
+                              <span className="inline-block text-[10px] font-bold tracking-wider text-blue-600 mt-1">MY TEMPLATE</span>
+                            )}
                           </div>
                           <button
                             type="button"
                             onClick={() => applyTemplateToEditor(t.filename)}
                             disabled={templateApplying}
-                            className="h-9 px-3 rounded-full bg-white border border-black/10 text-sm font-semibold text-[#0F141F] hover:bg-black/5 disabled:opacity-60"
+                            className="h-8 px-3 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition disabled:opacity-60 shrink-0"
                           >
-                            Add
+                            Apply
                           </button>
                         </div>
-                        {t.description ? <p className="text-xs text-black/45 mt-2 line-clamp-2">{t.description}</p> : null}
+                        {t.description && (
+                          <p className="text-xs text-slate-400 mt-2 line-clamp-2">{t.description}</p>
+                        )}
                       </div>
                     ))
                   )}
                 </div>
-
               </div>
             </div>
           </aside>
         </div>
 
+        {/* ── SIGN MODAL ── */}
         {signOpen && (
-          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-            <div className="w-full max-w-xl bg-white rounded-[28px] border border-black/10 shadow-2xl overflow-hidden">
-              <div className="px-6 pt-6 pb-4 border-b border-black/5 flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-lg font-bold text-[#111827]">Sign Now</p>
-                  <p className="text-xs text-black/45 mt-1">Invite signers and open the signing link.</p>
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+            <div className="w-full max-w-xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
+
+              {/* Modal header */}
+              <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center shrink-0">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6-6m-6 6v3h3l6.5-6.5a2.121 2.121 0 00-3-3L9 13z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-base font-extrabold text-slate-900">Send for Signature</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Invite signers to sign this contract.</p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSignOpen(false)}
-                  className="w-10 h-10 rounded-full hover:bg-black/5 text-black/45"
+                  className="w-9 h-9 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400 transition"
                   aria-label="Close"
                 >
-                  <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
               <div className="p-6 space-y-5">
+
+                {/* Signing order */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <div className="text-sm font-semibold text-[#111827]">Signing order</div>
-                    <div className="text-xs text-black/45 mt-1">Sequential = one-by-one. Parallel = invite all at once.</div>
+                    <p className="text-sm font-semibold text-slate-800">Signing order</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Sequential = one-by-one · Parallel = all at once</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
                     <button
                       type="button"
                       onClick={() => setSigningOrder('sequential')}
-                      className={`h-9 px-3 rounded-full border text-sm font-semibold ${
-                        signingOrder === 'sequential'
-                          ? 'bg-white border-black/30 text-[#0F141F]'
-                          : 'bg-white border-black/10 text-black/60 hover:bg-black/5'
+                      className={`h-8 px-3 rounded-lg text-xs font-semibold transition ${
+                        signingOrder === 'sequential' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                       }`}
-                    >
-                      Sequential
-                    </button>
+                    >Sequential</button>
                     <button
                       type="button"
                       onClick={() => setSigningOrder('parallel')}
-                      className={`h-9 px-3 rounded-full border text-sm font-semibold ${
-                        signingOrder === 'parallel'
-                          ? 'bg-white border-black/30 text-[#0F141F]'
-                          : 'bg-white border-black/10 text-black/60 hover:bg-black/5'
+                      className={`h-8 px-3 rounded-lg text-xs font-semibold transition ${
+                        signingOrder === 'parallel' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                       }`}
-                    >
-                      Parallel
-                    </button>
+                    >Parallel</button>
                   </div>
                 </div>
 
+                {/* Signers */}
                 <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-semibold text-[#111827]">Signers</div>
+                  <p className="text-sm font-semibold text-slate-800">Signers</p>
                   <button
                     type="button"
                     onClick={() => setSigners((prev) => [...prev, { email: '', name: '' }])}
-                    className="h-9 px-3 rounded-full bg-white border border-black/10 text-sm font-semibold text-[#0F141F] hover:bg-black/5"
+                    className="h-8 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition"
                   >
                     + Add signer
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {signers.map((s, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 items-center">
                       <input
-                        className="col-span-5 h-10 rounded-2xl bg-white border border-black/10 px-4 text-sm outline-none"
+                        className="col-span-5 h-10 rounded-2xl bg-slate-50 border border-slate-200 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-200"
                         placeholder="Name"
                         value={s.name}
                         onChange={(e) =>
@@ -1102,7 +1076,7 @@ const ContractEditorPageV2: React.FC = () => {
                         }
                       />
                       <input
-                        className="col-span-6 h-10 rounded-2xl bg-white border border-black/10 px-4 text-sm outline-none"
+                        className="col-span-6 h-10 rounded-2xl bg-slate-50 border border-slate-200 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-200"
                         placeholder="Email"
                         value={s.email}
                         onChange={(e) =>
@@ -1113,10 +1087,10 @@ const ContractEditorPageV2: React.FC = () => {
                         type="button"
                         onClick={() => setSigners((prev) => prev.filter((_, i) => i !== idx))}
                         disabled={signers.length <= 1}
-                        className="col-span-1 w-10 h-10 rounded-full hover:bg-rose-50 text-rose-600 disabled:opacity-40"
+                        className="col-span-1 w-9 h-9 rounded-xl hover:bg-red-50 flex items-center justify-center text-slate-400 hover:text-red-500 transition disabled:opacity-40"
                         aria-label="Remove signer"
                       >
-                        <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0H7m2 0V5a2 2 0 012-2h2a2 2 0 012 2v2" />
                         </svg>
                       </button>
@@ -1124,21 +1098,21 @@ const ContractEditorPageV2: React.FC = () => {
                   ))}
                 </div>
 
-                {signError && <div className="text-xs text-rose-600">{signError}</div>}
+                {signError && <p className="text-xs text-red-500">{signError}</p>}
 
-                {signingUrl ? (
-                  <div className="rounded-2xl border border-black/10 bg-[#F6F3ED] p-4">
-                    <div className="text-xs text-black/45 font-semibold">Signing link</div>
-                    <div className="mt-1 break-all text-sm text-[#111827]">{signingUrl}</div>
+                {signingUrl && (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Signing Link</p>
+                    <p className="mt-1 break-all text-sm text-slate-900">{signingUrl}</p>
                   </div>
-                ) : null}
+                )}
 
-                {signStatus ? (
-                  <div className="rounded-2xl border border-black/10 bg-white p-4">
+                {signStatus && (
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-xs text-black/45 font-semibold">Status</div>
-                        <div className="text-sm font-semibold text-[#111827]">{String((signStatus as any)?.status || 'unknown')}</div>
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Status</p>
+                        <p className="text-sm font-extrabold text-slate-900 mt-0.5">{String((signStatus as any)?.status || 'unknown').toUpperCase()}</p>
                       </div>
                       <button
                         type="button"
@@ -1146,80 +1120,66 @@ const ContractEditorPageV2: React.FC = () => {
                         disabled={(() => {
                           const statusVal = String((signStatus as any)?.status || '').toLowerCase();
                           const allSigned = Boolean((signStatus as any)?.all_signed);
-                          const completed = statusVal === 'completed' || statusVal === 'executed';
-                          return !completed || !allSigned;
+                          return !(statusVal === 'completed' || statusVal === 'executed') || !allSigned;
                         })()}
-                        className="h-9 px-3 rounded-full bg-[#0F141F] text-white text-sm font-semibold"
+                        className="h-9 px-4 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
                       >
                         Download signed PDF
                       </button>
                     </div>
 
                     {(signStatus as any)?.signers?.length ? (
-                      <div className="mt-3 space-y-2">
-                        {(signStatus as any).signers.map((s: any) => (
-                          <div key={String(s.email)} className="flex items-center justify-between text-xs">
-                            <div className="text-black/70 truncate">{String(s.name || s.email)}</div>
-                            {(() => {
-                              const raw = String(s.status || '').trim();
-                              const lower = raw.toLowerCase();
-                              const signedAt = s.signed_at ? String(s.signed_at) : '';
-
-                              const isDeclined = ['declined', 'rejected', 'canceled', 'cancelled', 'refused'].includes(lower);
-                              const isSigned = ['signed', 'completed', 'executed', 'done'].includes(lower) || Boolean(s.has_signed);
-                              const isPending = ['sent', 'invited', 'pending', 'in_progress', 'in progress', 'viewed'].includes(lower);
-
-                              const label = raw || (isSigned ? 'signed' : isDeclined ? 'declined' : isPending ? 'pending' : 'unknown');
-                              const badgeClass = isDeclined
-                                ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                : isSigned
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : isPending
-                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                    : 'bg-slate-50 text-slate-700 border-slate-200';
-
-                              return (
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  <span className={`px-2 py-1 rounded-full border text-[11px] font-semibold ${badgeClass}`}>{label}</span>
-                                  {signedAt ? <span className="text-[11px] text-black/40">{signedAt}</span> : null}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        ))}
-
-                        {(() => {
-                          const signersArr = Array.isArray((signStatus as any)?.signers) ? (signStatus as any).signers : [];
-                          const anyDeclined = signersArr.some((x: any) => {
-                            const s = String(x?.status || '').toLowerCase();
-                            return ['declined', 'rejected', 'canceled', 'cancelled', 'refused'].includes(s);
-                          });
-                          return anyDeclined ? (
-                            <div className="mt-2 text-[11px] text-rose-700">
-                              One or more signers declined. Start signing again after updating recipients or document.
+                      <div className="space-y-2 pt-2 border-t border-slate-100">
+                        {(signStatus as any).signers.map((s: any) => {
+                          const raw = String(s.status || '').trim();
+                          const lower = raw.toLowerCase();
+                          const isDeclined = ['declined', 'rejected', 'canceled', 'cancelled', 'refused'].includes(lower);
+                          const isSigned = ['signed', 'completed', 'executed', 'done'].includes(lower) || Boolean(s.has_signed);
+                          const isPending = ['sent', 'invited', 'pending', 'in_progress', 'in progress', 'viewed'].includes(lower);
+                          const label = raw || (isSigned ? 'signed' : isDeclined ? 'declined' : 'pending');
+                          const badgeClass = isDeclined
+                            ? 'bg-red-50 text-red-600 border-red-200'
+                            : isSigned
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : isPending
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-slate-50 text-slate-700 border-slate-200';
+                          return (
+                            <div key={String(s.email)} className="flex items-center justify-between text-xs gap-3">
+                              <span className="text-slate-600 truncate">{String(s.name || s.email)}</span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className={`px-2 py-0.5 rounded-full border text-[11px] font-semibold ${badgeClass}`}>{label}</span>
+                                {s.signed_at ? <span className="text-[11px] text-slate-400">{String(s.signed_at)}</span> : null}
+                              </div>
                             </div>
-                          ) : null;
-                        })()}
+                          );
+                        })}
+
+                        {(signStatus as any).signers.some((x: any) =>
+                          ['declined', 'rejected', 'canceled', 'cancelled', 'refused'].includes(String(x?.status || '').toLowerCase())
+                        ) && (
+                          <p className="text-[11px] text-red-500 pt-1">One or more signers declined. Update and restart.</p>
+                        )}
                       </div>
                     ) : null}
                   </div>
-                ) : null}
+                )}
 
-                <div className="flex items-center justify-end gap-2">
+                {/* Footer actions */}
+                <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={refreshSigningStatus}
                     disabled={signStatusLoading}
-                    className="h-10 px-4 rounded-full bg-white border border-black/10 text-black/70 text-sm font-semibold hover:bg-black/5 disabled:opacity-60"
+                    className="h-10 px-4 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition disabled:opacity-60"
                   >
                     {signStatusLoading ? 'Checking…' : 'Check status'}
                   </button>
-
                   <button
                     type="button"
                     onClick={startSigning}
                     disabled={signing}
-                    className="h-10 px-4 rounded-full bg-[#FF5C7A] text-white text-sm font-semibold disabled:opacity-60"
+                    className="h-10 px-4 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60"
                   >
                     {signing ? 'Starting…' : 'Start signing'}
                   </button>

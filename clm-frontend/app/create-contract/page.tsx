@@ -977,75 +977,79 @@ const CreateContractInner = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-8 py-6 md:py-8">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
-            <div>
-              <h1 className="text-[28px] md:text-[34px] font-semibold text-[#0F141F] leading-tight">{pageTitle}</h1>
-              <p className="text-sm md:text-base text-[#6B7280] mt-1">{pageSubtitle}</p>
-            </div>
+      <div className="space-y-6">
+
+        {/* ── PAGE HEADER ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">{pageTitle}</h1>
+            <p className="mt-1 text-sm text-slate-500">{pageSubtitle}</p>
           </div>
 
-          <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex w-full sm:w-auto items-center rounded-full bg-white border border-black/5 p-1 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setMode('templates')}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-full text-sm font-medium transition text-center ${
-                  mode === 'templates' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:text-gray-900'
-                }`}
-              >
-                Template Based
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('ai')}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-full text-sm font-medium transition flex items-center justify-center gap-2 ${
-                  mode === 'ai' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:text-gray-900'
-                }`}
-              >
-                <Sparkles className="w-4 h-4" /> AI Builder
-              </button>
-            </div>
+          {/* Mode switcher */}
+          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-2xl p-1">
+            <button
+              type="button"
+              onClick={() => setMode('templates')}
+              className={`px-5 py-2 rounded-xl text-sm font-semibold transition ${
+                mode === 'templates' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              Template Based
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('ai')}
+              className={`px-5 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 ${
+                mode === 'ai' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" /> AI Builder
+            </button>
           </div>
+        </div>
 
-          {mode === 'ai' ? (
-            <div className="mt-8">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-5 py-3 rounded-2xl text-sm">
+            {error}
+          </div>
+        )}
+
+        {mode === 'ai' ? (
+          <div className="space-y-5">
               {aiStep === 'select' ? (
                 <div className="grid grid-cols-12 gap-6">
-                  {/* Template picker (limited width + scrollable) */}
-                  <aside className="col-span-12 lg:col-span-3 bg-white rounded-[18px] border border-black/5 shadow-sm overflow-hidden">
-                    <div className="px-6 pt-6 pb-4 border-b border-black/5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center">
-                          <Sparkles className="w-5 h-5" />
+
+                  {/* Template picker sidebar */}
+                  <aside className="col-span-12 lg:col-span-3 bg-white rounded-3xl border border-slate-200 overflow-hidden flex flex-col">
+                    <div className="px-5 pt-5 pb-4 border-b border-slate-100">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                          <Sparkles className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="text-lg font-semibold text-[#0F141F]">AI Builder</div>
-                          <div className="text-xs text-[#6B7280]">Pick a template to start</div>
+                          <p className="text-sm font-extrabold text-slate-800">AI Builder</p>
+                          <p className="text-xs text-slate-400">Pick a template to start</p>
                         </div>
                       </div>
 
-                      <div className="mt-4 flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
-                        <Search className="w-4 h-4 text-black/35" />
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
-                          className="bg-transparent outline-none text-sm w-full"
+                          className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-200"
                           placeholder="Search templates…"
                           value={aiTemplateQuery}
                           onChange={(e) => setAiTemplateQuery(e.target.value)}
                         />
                       </div>
-
-                      <div className="mt-3 text-[11px] text-black/45">
-                        {aiTemplateQuery.trim()
-                          ? `Showing ${aiFilteredTemplates.length} results`
-                          : `Showing ${aiFilteredTemplates.length} templates`}
-                      </div>
+                      <p className="mt-2 text-[11px] text-slate-400">
+                        {aiTemplateQuery.trim() ? `${aiFilteredTemplates.length} result${aiFilteredTemplates.length === 1 ? '' : 's'}` : `${aiFilteredTemplates.length} templates`}
+                      </p>
                     </div>
 
-                    <div className="p-4 space-y-3 overflow-y-auto max-h-[45vh] sm:max-h-[55vh] lg:max-h-[calc(100vh-320px)]">
+                    <div className="p-4 space-y-2 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
                       {aiFilteredTemplates.length === 0 ? (
-                        <div className="text-sm text-black/45 p-2">No templates match your search.</div>
+                        <p className="text-sm text-slate-400 p-2">No templates match.</p>
                       ) : (
                         aiFilteredTemplates.map((t) => {
                           const isSelected = selectedTemplate === t.filename;
@@ -1054,14 +1058,12 @@ const CreateContractInner = () => {
                               key={t.filename}
                               type="button"
                               onClick={() => setSelectedTemplate(t.filename)}
-                              className={`w-full text-left rounded-2xl border p-4 transition ${
-                                isSelected
-                                  ? 'border-blue-500 bg-blue-50'
-                                  : 'border-black/5 bg-gray-100 hover:border-black/10'
+                              className={`w-full text-left rounded-2xl border p-3.5 transition ${
+                                isSelected ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-200' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                               }`}
                             >
-                              <div className="text-sm font-semibold text-[#111827] truncate">{t.name || t.filename}</div>
-                              <div className="text-xs text-black/45 mt-1 line-clamp-2">{t.description || t.contract_type || ''}</div>
+                              <p className={`text-sm font-semibold truncate ${ isSelected ? 'text-blue-700' : 'text-slate-800' }`}>{t.name || t.filename}</p>
+                              <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{t.description || t.contract_type || ''}</p>
                             </button>
                           );
                         })
@@ -1069,213 +1071,202 @@ const CreateContractInner = () => {
                     </div>
                   </aside>
 
-                  {/* Main content */}
-                  <section className="col-span-12 lg:col-span-9 bg-white rounded-[18px] border border-black/5 shadow-sm p-5 sm:p-6 lg:p-8">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div>
-                        <div className="text-lg font-semibold text-[#0F141F]">Get Started</div>
-                        <div className="text-sm text-[#6B7280] mt-1">Open the template in the editor and apply prompts live.</div>
+                  {/* Get started panel */}
+                  <section className="col-span-12 lg:col-span-9 bg-white rounded-3xl border border-slate-200 overflow-hidden">
+
+                    {/* Hero */}
+                    <div className="px-8 py-10 border-b border-slate-100">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+                        <div className="max-w-lg">
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 mb-4">
+                            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                            <span className="text-xs font-semibold text-blue-700">AI-Powered Drafting</span>
+                          </div>
+                          <h2 className="text-2xl font-extrabold text-slate-900">Draft with AI assistance</h2>
+                          <p className="mt-2 text-sm text-slate-500 leading-relaxed">Open any template in the intelligent editor. Describe what you need — the AI proposes a full revision. Accept, reject, or refine until it's exactly right.</p>
+                          <div className="mt-5 flex items-center gap-4 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={startAiBuilder}
+                              disabled={!selectedTemplate || aiLoadingTemplate}
+                              className="inline-flex items-center gap-2 h-11 px-6 rounded-2xl bg-blue-600 text-white text-sm font-extrabold hover:bg-blue-700 transition disabled:opacity-60"
+                            >
+                              {aiLoadingTemplate ? (
+                                <><span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Loading…</>
+                              ) : aiDraftUpdatedAt ? (
+                                'Resume Draft →'
+                              ) : 'Get Started →'}
+                            </button>
+                            {!selectedTemplate && <p className="text-xs text-slate-400">← Select a template first</p>}
+                          </div>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-3 shrink-0">
+                          {[
+                            { label: 'Templates', value: String(templates.length) },
+                            { label: 'AI steps', value: 'Instant' },
+                            { label: 'Formats', value: 'Rich Text' },
+                            { label: 'Export', value: 'Editor' },
+                          ].map((s) => (
+                            <div key={s.label} className="bg-slate-50 rounded-2xl border border-slate-200 px-4 py-3 text-center">
+                              <p className="text-lg font-extrabold text-slate-900">{s.value}</p>
+                              <p className="text-[11px] text-slate-400 mt-0.5">{s.label}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={startAiBuilder}
-                        disabled={!selectedTemplate || aiLoadingTemplate}
-                        className="h-11 w-full sm:w-auto px-5 rounded-full bg-gray-900 text-white text-sm font-semibold disabled:opacity-60"
-                      >
-                        {aiLoadingTemplate ? 'Loading…' : aiDraftUpdatedAt ? 'Resume Draft' : 'Get Started'}
-                      </button>
+
+                      {aiDraftUpdatedAt && (
+                        <div className="mt-5 flex items-center gap-3 rounded-2xl bg-blue-50 border border-blue-200 px-4 py-3">
+                          <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                          <p className="text-xs text-blue-700 font-semibold">
+                            Draft auto-saved — last updated {new Date(aiDraftUpdatedAt).toLocaleString()}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => { if (selectedTemplate) { clearAiDraft(selectedTemplate); setAiDraftUpdatedAt(null); } }}
+                            className="ml-auto text-xs text-blue-600 hover:underline font-semibold"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
+
+                      {aiError && (
+                        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm">{aiError}</div>
+                      )}
                     </div>
 
-                    {aiDraftUpdatedAt ? (
-                      <div className="mt-4 rounded-2xl border border-black/10 bg-gray-100 px-4 py-3 text-sm text-black/60">
-                        Saved draft found — last updated {new Date(aiDraftUpdatedAt).toLocaleString()}.
-                      </div>
-                    ) : null}
-
-                    {aiError ? (
-                      <div className="mt-5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm">
-                        {aiError}
-                      </div>
-                    ) : null}
-
-                    <div className="mt-6">
-                      <div className="text-sm font-semibold text-[#0F141F]">Selected Template</div>
-                      <div className="mt-3 rounded-2xl border border-black/5 bg-gray-100 p-4">
-                        <div className="text-sm font-semibold text-[#111827]">
-                          {selectedTemplateObj?.name || selectedTemplate || '—'}
+                    {/* Selected template preview */}
+                    <div className="px-8 py-6">
+                      <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-3">Selected Template</p>
+                      {selectedTemplateObj ? (
+                        <div className="flex items-start gap-4 bg-slate-50 rounded-2xl border border-slate-200 p-4">
+                          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-extrabold text-slate-800">{selectedTemplateObj.name || selectedTemplateObj.filename}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">{selectedTemplateObj.description || 'Template preview will open in the AI editor.'}</p>
+                            <p className="text-[11px] text-slate-300 font-mono mt-1">{selectedTemplateObj.filename}</p>
+                          </div>
                         </div>
-                        <div className="text-xs text-black/45 mt-1">
-                          {selectedTemplateObj?.description || 'Template preview will open in the editor.'}
+                      ) : (
+                        <div className="bg-slate-50 rounded-2xl border border-slate-200 border-dashed p-6 text-center">
+                          <p className="text-sm text-slate-400">Select a template from the sidebar to see a preview here.</p>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </section>
                 </div>
               ) : (
-                <div className="bg-gray-50">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                    <div className="flex items-center gap-4 min-w-0">
+                <div className="space-y-5">
+
+                  {/* AI edit header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
                       <button
                         type="button"
-                        onClick={() => {
-                          stopAi();
-                          setAiStep('select');
-                        }}
-                        className="w-10 h-10 rounded-full bg-white border border-black/10 shadow-sm grid place-items-center text-black/45 hover:text-black"
+                        onClick={() => { stopAi(); setAiStep('select'); }}
+                        className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:border-slate-300 transition shrink-0"
                         aria-label="Back"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
                       <div className="min-w-0">
-                        <div className="text-xl md:text-2xl font-bold text-[#111827] truncate">
-                          {aiTitle || selectedTemplateObj?.name || 'AI Builder'}
-                        </div>
-                        <div className="text-xs text-black/45 mt-1 truncate">Template: {selectedTemplate || ''}</div>
+                        <p className="text-xl font-extrabold text-slate-900 truncate">{aiTitle || selectedTemplateObj?.name || 'AI Builder'}</p>
+                        <p className="text-xs text-slate-400 font-mono mt-0.5 truncate">Template: {selectedTemplate}</p>
                       </div>
                     </div>
-                    <div className="w-full sm:w-auto flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={createDraftFromAi}
-                        disabled={loading || aiGenerating || !aiBaseText.trim() || !user}
-                        className="h-10 w-full sm:w-auto px-4 rounded-full bg-white border border-black/10 text-sm font-semibold text-[#111827] hover:bg-black/5 disabled:opacity-60"
-                      >
-                        Create Draft
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={createDraftFromAi}
+                      disabled={loading || aiGenerating || !aiBaseText.trim() || !user}
+                      className="inline-flex items-center gap-2 h-10 px-5 rounded-2xl bg-blue-600 text-white text-sm font-extrabold hover:bg-blue-700 transition disabled:opacity-60 shrink-0"
+                    >
+                      {loading ? <><span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Creating…</> : 'Create Draft →'}
+                    </button>
                   </div>
 
-                  {aiError ? (
-                    <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm">
-                      {aiError}
-                    </div>
-                  ) : null}
+                  {aiError && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl text-sm">{aiError}</div>
+                  )}
 
                   <div className="grid grid-cols-12 gap-6">
-                    {/* Editor */}
-                    <section className="col-span-12 lg:col-span-8 bg-white rounded-[28px] border border-black/5 shadow-sm overflow-hidden">
-                      <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
-                        <div className="text-sm font-semibold text-[#111827]">Template Editor</div>
-                        <div className="text-xs text-black/45">
-                          {aiGenerating ? 'Generating suggestion…' : 'Edit content; accept AI suggestions on the right'}
-                        </div>
-                      </div>
 
-                      <div className="px-4 sm:px-6 py-5 sm:py-6 overflow-visible lg:overflow-y-auto lg:max-h-[calc(100vh-280px)]">
+                    {/* Template Editor */}
+                    <section className="col-span-12 lg:col-span-8 bg-white rounded-3xl border border-slate-200 overflow-hidden">
+                      <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <p className="text-sm font-extrabold text-slate-800">Template Editor</p>
+                        <span className={`text-xs ${ aiGenerating ? 'text-blue-500 font-semibold' : 'text-slate-400' }`}>
+                          {aiGenerating ? 'AI generating…' : 'Edit freely · Accept AI suggestions on the right'}
+                        </span>
+                      </div>
+                      <div className="px-6 py-5 overflow-y-auto max-h-[calc(100vh-280px)]">
                         <RichTextEditor
                           valueHtml={aiBaseHtml}
                           disabled={aiGenerating}
-                          onEditorReady={(ed) => {
-                            aiEditorApiRef.current = ed;
-                          }}
-                          onChange={(html: string, text: string) => {
-                            setAiBaseHtml(html);
-                            setAiBaseText(text);
-                          }}
-                          editorClassName={`min-h-[50vh] sm:min-h-[60vh] rounded-2xl border border-black/10 bg-white px-5 py-4 text-[13px] leading-6 text-slate-900 font-serif outline-none ${
-                            aiGenerating ? 'opacity-80' : ''
-                          }`}
+                          onEditorReady={(ed) => { aiEditorApiRef.current = ed; }}
+                          onChange={(html: string, text: string) => { setAiBaseHtml(html); setAiBaseText(text); }}
+                          editorClassName={`min-h-[55vh] rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[13px] leading-6 text-slate-900 font-serif outline-none ${ aiGenerating ? 'opacity-75' : '' }`}
                         />
                       </div>
                     </section>
 
-                    {/* AI Suggestions */}
-                    <aside className="col-span-12 lg:col-span-4 space-y-6 lg:sticky lg:top-6 self-start">
-                      <div className="bg-white rounded-[28px] border border-black/5 shadow-sm overflow-hidden flex flex-col lg:h-[calc(100vh-220px)]">
-                        <div className="px-6 pt-6 pb-4 border-b border-black/5">
+                    {/* AI Suggestions Panel */}
+                    <aside className="col-span-12 lg:col-span-4 lg:sticky lg:top-6 self-start">
+                      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+
+                        {/* Panel header */}
+                        <div className="px-5 py-4 border-b border-slate-100">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-[#111827]">AI Suggestions</p>
-                            <span className="text-[11px] text-black/45">Streaming</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
+                                <Sparkles className="w-3.5 h-3.5 text-white" />
+                              </div>
+                              <p className="text-sm font-extrabold text-slate-800">AI Suggestions</p>
+                            </div>
+                            {aiGenerating && <span className="text-[11px] text-blue-500 font-semibold animate-pulse">Streaming…</span>}
                           </div>
-                          <p className="text-xs text-black/45 mt-2">
-                            Generate a proposed revision, then accept or reject it.
-                          </p>
+                          <p className="text-xs text-slate-400 mt-1.5">Describe changes · AI proposes a full revision · Accept or reject.</p>
                         </div>
 
-                        <div className="p-5 flex flex-col flex-1 min-h-0">
-                          {/* Chat-style prompt/response history (persisted per template) */}
-                          <div className="mb-4 rounded-2xl border border-black/10 bg-white overflow-hidden flex flex-col flex-1 min-h-0">
-                            <div className="px-4 py-3 border-b border-black/5 flex items-center justify-between gap-3">
-                              <div className="text-xs font-semibold text-[#111827]">History</div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={scrollAiChatToBottom}
-                                  className="text-[11px] font-semibold text-[#0F141F] hover:underline"
-                                >
-                                  Latest
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (!selectedTemplate) return;
-                                    clearAiChat(selectedTemplate);
-                                    setAiMessages([]);
-                                  }}
-                                  className="text-[11px] font-semibold text-blue-600 hover:underline"
-                                >
-                                  Clear
-                                </button>
+                        {/* Chat history */}
+                        <div className="flex flex-col flex-1 min-h-0 p-4 space-y-3">
+                          <div className="rounded-2xl border border-slate-200 overflow-hidden flex flex-col flex-1 min-h-0" style={{ minHeight: '160px' }}>
+                            <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                              <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">History</p>
+                              <div className="flex items-center gap-3">
+                                <button type="button" onClick={scrollAiChatToBottom} className="text-[11px] text-slate-500 hover:text-slate-700 font-semibold">↓ Latest</button>
+                                <button type="button" onClick={() => { if (!selectedTemplate) return; clearAiChat(selectedTemplate); setAiMessages([]); }} className="text-[11px] text-blue-600 hover:underline font-semibold">Clear</button>
                               </div>
                             </div>
-
                             <div
                               ref={aiChatScrollRef}
-                              onScroll={(e) => {
-                                const el = e.currentTarget;
-                                const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-                                aiChatStickToBottomRef.current = distanceFromBottom < 32;
-                              }}
+                              onScroll={(e) => { const el = e.currentTarget; aiChatStickToBottomRef.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < 32; }}
                               className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3"
                             >
                               {aiMessages.length === 0 ? (
-                                <div className="text-sm text-[#6B7280]">Your prompts and AI responses will appear here.</div>
+                                <p className="text-sm text-slate-400">Your prompts and AI responses will appear here.</p>
                               ) : (
                                 aiMessages.map((m) => {
                                   const isUser = m.role === 'user';
                                   const isAssistant = m.role === 'assistant';
-                                  const pill = isUser ? 'You' : isAssistant ? 'AI' : 'System';
-                                  const pillClass = isUser
-                                    ? 'bg-gray-900 text-white'
-                                    : isAssistant
-                                      ? 'bg-blue-600 text-white'
-                                      : 'bg-slate-100 text-slate-700';
-
                                   return (
-                                    <div key={m.id} className={isUser ? 'text-right' : 'text-left'}>
-                                      <div className="flex items-center justify-between gap-2 mb-1">
-                                        <span
-                                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${pillClass}`}
-                                        >
-                                          {pill}
+                                    <div key={m.id}>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold ${ isUser ? 'bg-slate-800 text-white' : isAssistant ? 'bg-blue-600 text-white' : 'bg-red-100 text-red-600' }`}>
+                                          {isUser ? 'You' : isAssistant ? 'AI' : 'System'}
                                         </span>
-                                        <span className="text-[11px] text-black/35">
-                                          {m.createdAt ? new Date(m.createdAt).toLocaleTimeString() : ''}
-                                        </span>
+                                        <span className="text-[10px] text-slate-300">{m.createdAt ? new Date(m.createdAt).toLocaleTimeString() : ''}</span>
                                       </div>
-                                      <div
-                                        className={`inline-block max-w-[95%] rounded-2xl border px-3 py-2 text-xs whitespace-pre-wrap break-words ${
-                                          isUser
-                                            ? 'bg-gray-100 border-black/10 text-[#111827]'
-                                            : isAssistant
-                                              ? 'bg-white border-black/10 text-[#111827]'
-                                              : 'bg-red-50 border-red-200 text-red-700'
-                                        }`}
-                                      >
-                                        {m.content || (m.role === 'assistant' && aiGenerating ? '…' : '')}
+                                      <div className={`rounded-2xl border px-3 py-2.5 text-xs whitespace-pre-wrap break-words ${ isUser ? 'bg-slate-50 border-slate-200 text-slate-800' : isAssistant ? 'bg-white border-slate-200 text-slate-800' : 'bg-red-50 border-red-200 text-red-600' }`}>
+                                        {m.content || (isAssistant && aiGenerating ? '…' : '')}
                                       </div>
-
-                                      {isUser ? (
-                                        <div className="mt-1">
-                                          <button
-                                            type="button"
-                                            onClick={() => setAiPrompt(m.content)}
-                                            className="text-[11px] text-black/45 hover:underline"
-                                          >
-                                            Reuse
-                                          </button>
-                                        </div>
-                                      ) : null}
+                                      {isUser && (
+                                        <button type="button" onClick={() => setAiPrompt(m.content)} className="text-[10px] text-slate-400 hover:text-blue-600 mt-1 ml-1">↑ Reuse</button>
+                                      )}
                                     </div>
                                   );
                                 })
@@ -1283,55 +1274,47 @@ const CreateContractInner = () => {
                             </div>
                           </div>
 
-                          <div className="mt-auto">
-                          <textarea
-                            value={aiPrompt}
-                            onChange={(e) => setAiPrompt(e.target.value)}
-                            placeholder="e.g., Add a termination for convenience clause with 30 days notice, and update payment terms to Net 45."
-                            className="w-full min-h-[140px] rounded-2xl border border-black/10 bg-gray-100 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/25"
-                            disabled={aiGenerating}
-                          />
+                          {/* Prompt area */}
+                          <div className="space-y-2.5">
+                            <textarea
+                              value={aiPrompt}
+                              onChange={(e) => setAiPrompt(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !aiGenerating && aiPrompt.trim()) applyAiPrompt(); }}
+                              placeholder="e.g., Add a 30-day termination clause and update payment terms to Net 45…"
+                              className="w-full min-h-[90px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+                              disabled={aiGenerating}
+                            />
 
-                          <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={applyAiPrompt}
-                              disabled={aiGenerating || !aiPrompt.trim()}
-                              className="h-10 w-full sm:w-auto px-4 rounded-full bg-gray-900 text-white text-sm font-semibold disabled:opacity-60"
-                            >
-                              {aiGenerating ? 'Generating…' : 'Generate Suggestion'}
-                            </button>
-                            {aiGenerating ? (
+                            <div className="flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={stopAi}
-                                className="h-10 w-full sm:w-auto px-4 rounded-full bg-white border border-black/10 text-sm font-semibold text-[#111827] hover:bg-black/5"
+                                onClick={applyAiPrompt}
+                                disabled={aiGenerating || !aiPrompt.trim()}
+                                className="flex-1 h-9 rounded-xl bg-slate-900 text-white text-xs font-extrabold hover:bg-slate-800 transition disabled:opacity-60"
                               >
-                                Stop
+                                {aiGenerating ? 'Generating…' : 'Generate Suggestion'}
                               </button>
-                            ) : null}
+                              {aiGenerating ? (
+                                <button type="button" onClick={stopAi} className="h-9 px-3 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">Stop</button>
+                              ) : null}
+                            </div>
 
-                            <button
-                              type="button"
-                              onClick={acceptAiSuggestion}
-                              disabled={!aiSuggestionText.trim() || aiGenerating}
-                              className="h-10 w-full sm:w-auto px-4 rounded-full bg-blue-600 text-white text-sm font-semibold disabled:opacity-60"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              type="button"
-                              onClick={rejectAiSuggestion}
-                              disabled={!aiSuggestionText.trim() || aiGenerating}
-                              className="h-10 w-full sm:w-auto px-4 rounded-full bg-white border border-black/10 text-sm font-semibold text-[#111827] hover:bg-black/5 disabled:opacity-60"
-                            >
-                              Reject
-                            </button>
-                          </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={acceptAiSuggestion}
+                                disabled={!aiSuggestionText.trim() || aiGenerating}
+                                className="h-9 rounded-xl bg-blue-600 text-white text-xs font-extrabold hover:bg-blue-700 transition disabled:opacity-50"
+                              >Accept ✓</button>
+                              <button
+                                type="button"
+                                onClick={rejectAiSuggestion}
+                                disabled={!aiSuggestionText.trim() || aiGenerating}
+                                className="h-9 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition disabled:opacity-50"
+                              >Reject ✕</button>
+                            </div>
 
-                          {aiError ? <div className="mt-3 text-xs text-red-600">{aiError}</div> : null}
-
-                          <div className="mt-4 text-xs text-black/45">Tip: be specific (sections, numbers, jurisdictions).</div>
+                            <p className="text-[10px] text-slate-400 text-center">Tip: be specific — mention sections, numbers, jurisdictions · ⌘↵ to send</p>
                           </div>
                         </div>
                       </div>
@@ -1342,102 +1325,87 @@ const CreateContractInner = () => {
             </div>
           ) : (
             <>
-              <div className="mt-8">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <h2 className="text-sm font-semibold text-[#0F141F]">All Templates</h2>
-                  <div className="flex items-center gap-2 bg-white border border-black/5 shadow-sm rounded-full px-4 py-2 w-full sm:w-[420px]">
-                    <Search className="w-4 h-4 text-black/35" />
+              {/* ── TEMPLATE PICKER ── */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <p className="text-sm font-extrabold text-slate-800">Choose a template</p>
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                     <input
                       value={templateQuery}
                       onChange={(e) => setTemplateQuery(e.target.value)}
                       placeholder="Search templates…"
-                      className="bg-transparent outline-none text-sm w-full text-[#0F141F] placeholder:text-black/35"
-                      aria-label="Search templates"
+                      className="w-full sm:w-[280px] bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-200"
                     />
                   </div>
                 </div>
 
-                <div className="mt-4">
-                  {templatesLoading ? (
-                    <div className="text-sm text-[#6B7280] py-6">Loading templates…</div>
-                  ) : filteredTemplates.length === 0 ? (
-                    <div className="text-sm text-[#6B7280] py-6">No templates match your search.</div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredTemplates.map((t) => {
-                        const isSelected = selectedTemplate === t.filename;
-                        const meta = TEMPLATE_CARD_META[t.filename] || {
-                          title: t.name,
-                          subtitle: t.description || 'Template',
-                          pill: t.contract_type || 'Template',
-                          eta: '~5 mins',
-                          iconBg: 'bg-slate-50 text-slate-700',
-                          icon: <FileText className="w-5 h-5" />,
-                        };
+                {templatesLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
+                    <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+                    Loading templates…
+                  </div>
+                ) : filteredTemplates.length === 0 ? (
+                  <div className="text-sm text-slate-400 py-4">No templates match your search.</div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {filteredTemplates.map((t) => {
+                      const isSelected = selectedTemplate === t.filename;
+                      const meta = TEMPLATE_CARD_META[t.filename] || {
+                        title: t.name,
+                        subtitle: t.description || 'Template',
+                        pill: t.contract_type || 'Template',
+                        eta: '~5 mins',
+                        iconBg: 'bg-slate-100 text-slate-600',
+                        icon: <FileText className="w-5 h-5" />,
+                      };
+                      const createdByYou = user && ((t as any)?.created_by_id && String((t as any).created_by_id) === String((user as any)?.user_id));
 
-                        const createdByYou =
-                          user &&
-                          ((t as any)?.created_by_id && String((t as any).created_by_id) === String((user as any)?.user_id));
-
-                        return (
-                          <button
-                            key={t.filename}
-                            type="button"
-                            onClick={() => setSelectedTemplate(t.filename)}
-                            className={`text-left bg-white rounded-[18px] border shadow-sm p-5 transition w-full ${
-                              isSelected
-                                ? 'border-blue-600 ring-2 ring-blue-500/20'
-                                : 'border-black/5 hover:border-black/10'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className={`w-10 h-10 rounded-xl ${meta.iconBg} flex items-center justify-center flex-shrink-0`}>{meta.icon}</div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="font-semibold text-[#0F141F] truncate">{meta.title}</div>
-                                  <div
-                                    className={`w-6 h-6 rounded-full flex items-center justify-center border flex-shrink-0 ${
-                                      isSelected ? 'bg-blue-600 border-blue-600' : 'bg-white border-black/10'
-                                    }`}
-                                  >
-                                    {isSelected ? <div className="w-2.5 h-2.5 rounded-full bg-white" /> : null}
-                                  </div>
-                                </div>
-                                <div className="text-sm text-[#6B7280] mt-1 line-clamp-2">{meta.subtitle}</div>
-                                <div className="mt-3 flex items-center gap-2 flex-wrap">
-                                  <span className="text-xs px-2.5 py-1 rounded-full bg-[#F3F4F6] text-[#0F141F]/70">
-                                    {meta.pill}
-                                  </span>
-                                  {createdByYou ? (
-                                    <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-[#0F141F]/70 border border-black/5">
-                                      Mine
-                                    </span>
-                                  ) : null}
-                                  <span className="text-[11px] text-[#6B7280] truncate">{t.filename}</span>
-                                </div>
-                              </div>
+                      return (
+                        <button
+                          key={t.filename}
+                          type="button"
+                          onClick={() => setSelectedTemplate(t.filename)}
+                          className={`text-left rounded-2xl border p-4 transition w-full group ${
+                            isSelected ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-500/15' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-3">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                              isSelected ? 'bg-blue-600 text-white' : meta.iconBg
+                            }`}>{meta.icon}</div>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                              isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-300'
+                            }`}>
+                              {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                             </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                          </div>
+                          <p className={`text-sm font-extrabold truncate ${ isSelected ? 'text-blue-700' : 'text-slate-900' }`}>{meta.title}</p>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{meta.subtitle}</p>
+                          <div className="mt-3 flex items-center gap-1.5 flex-wrap">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                              isSelected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                            }`}>{meta.pill}</span>
+                            <span className="text-[10px] text-slate-400">{meta.eta}</span>
+                            {createdByYou && <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold">Mine</span>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {error && (
-                <div className="mt-6 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl">
-                  <p className="font-medium">{error}</p>
-                </div>
-              )}
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-              <form onSubmit={handleSubmit} className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left: Data Entry */}
-                <div className="bg-white rounded-[18px] border border-black/5 shadow-sm overflow-hidden lg:col-span-5">
-                  <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</div>
-                      <div className="font-semibold text-[#0F141F]">Data Entry</div>
+                {/* ── LEFT: DATA ENTRY ── */}
+                <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200 overflow-hidden">
+
+                  {/* Panel header */}
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs font-extrabold">1</div>
+                      <p className="text-sm font-extrabold text-slate-800">Data Entry</p>
                     </div>
                     <button
                       type="button"
@@ -1452,71 +1420,66 @@ const CreateContractInner = () => {
                           setTemplateDraftRestored(false);
                         }
                       }}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="text-xs font-semibold text-slate-400 hover:text-red-500 transition"
                     >
                       Clear all
                     </button>
                   </div>
 
-                  {templateDraftUpdatedAt ? (
-                    <div className="px-5 pt-4">
-                      <div className="rounded-2xl border border-black/10 bg-gray-100 px-4 py-3 flex items-center justify-between gap-3">
-                        <div className="text-xs text-black/60">
-                          {templateDraftRestored ? 'Draft restored' : 'Auto-saved'} — {new Date(templateDraftUpdatedAt).toLocaleString()}
-                        </div>
-                        {selectedTemplate ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              clearTemplateDraft(selectedTemplate);
-                              setTemplateDraftUpdatedAt(null);
-                              setTemplateDraftRestored(false);
-                            }}
-                            className="text-xs font-semibold text-[#0F141F] hover:underline"
-                          >
-                            Clear draft
-                          </button>
-                        ) : null}
-                      </div>
+                  {/* Draft banner */}
+                  {templateDraftUpdatedAt && (
+                    <div className="mx-5 mt-4 rounded-2xl bg-slate-50 border border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3">
+                      <p className="text-xs text-slate-500">
+                        {templateDraftRestored ? 'Draft restored' : 'Auto-saved'} &mdash; {new Date(templateDraftUpdatedAt).toLocaleString()}
+                      </p>
+                      {selectedTemplate && (
+                        <button type="button" onClick={() => { clearTemplateDraft(selectedTemplate); setTemplateDraftUpdatedAt(null); setTemplateDraftRestored(false); }} className="text-xs font-semibold text-slate-600 hover:underline">
+                          Clear draft
+                        </button>
+                      )}
                     </div>
-                  ) : null}
+                  )}
 
-                  <div className="p-5 space-y-6">
+                  <div className="p-5 overflow-y-auto max-h-[calc(100vh-260px)] space-y-6">
                     {!selectedTemplate ? (
-                      <div className="text-sm text-[#6B7280]">Select a template to begin.</div>
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
+                          <FileText className="w-5 h-5 text-slate-400" />
+                        </div>
+                        <p className="text-sm font-semibold text-slate-500">Select a template above to begin</p>
+                      </div>
                     ) : schemaLoading ? (
-                      <div className="text-sm text-[#6B7280]">Loading required fields…</div>
+                      <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
+                        <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+                        Loading fields…
+                      </div>
                     ) : (
                       <>
-                        {(sections.length ? sections : [{ title: 'Data Entry', fields: [] }]).map((section) => (
+                        {(sections.length ? sections : [{ title: 'Details', fields: [] }]).map((section) => (
                           <div key={section.title}>
-                            <div className="text-[11px] tracking-wider text-[#9CA3AF] font-semibold uppercase">{section.title}</div>
-                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <p className="text-[10px] tracking-widest font-extrabold text-slate-400 uppercase mb-3">{section.title}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {(section.fields || []).map((f: TemplateSchemaField) => (
-                                <div key={f.key} className={f.type === 'select' ? 'md:col-span-1' : ''}>
-                                  <label className="block text-sm font-medium text-[#374151] mb-2">
-                                    {f.label} {f.required ? <span className="text-blue-600">*</span> : null}
+                                <div key={f.key}>
+                                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                                    {f.label}{f.required && <span className="text-blue-500 ml-0.5">*</span>}
                                   </label>
                                   {f.type === 'select' ? (
                                     <select
                                       value={fieldValues[f.key] || ''}
                                       onChange={(e) => setField(f.key, e.target.value)}
-                                      className="w-full px-4 py-3 border border-black/10 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
+                                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                                     >
                                       <option value="">Select…</option>
-                                      {(f.options || []).map((o) => (
-                                        <option key={o} value={o}>
-                                          {o}
-                                        </option>
-                                      ))}
+                                      {(f.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
                                     </select>
                                   ) : (
                                     <input
                                       type={f.type}
                                       value={fieldValues[f.key] || ''}
                                       onChange={(e) => setField(f.key, e.target.value)}
-                                      className="w-full px-4 py-3 border border-black/10 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
                                       placeholder={f.label}
+                                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                                     />
                                   )}
                                 </div>
@@ -1525,252 +1488,168 @@ const CreateContractInner = () => {
                           </div>
                         ))}
 
-                        {/* Clauses & Constraints */}
+                        {/* Clause Library */}
                         <div>
-                          <div className="text-[11px] tracking-wider text-[#9CA3AF] font-semibold uppercase">Clause & Constraints</div>
-                          <div className="mt-3 space-y-4">
-                            <div className="bg-gray-50 rounded-2xl p-4 border border-black/5">
-                              <div className="flex items-center justify-between">
-                                <div className="font-semibold text-[#111827] text-sm">Clause Library</div>
-                                <div className="text-xs text-[#6B7280]">Optional</div>
-                              </div>
-                              <div className="mt-3">
-                                <input
-                                  value={clauseQuery}
-                                  onChange={(e) => setClauseQuery(e.target.value)}
-                                  placeholder="Search clauses…"
-                                  className="w-full px-4 py-2.5 border border-black/10 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
-                                />
-                              </div>
-                              <div className="mt-3 max-h-44 overflow-y-auto space-y-2 pr-1">
-                                {clausesLoading ? (
-                                  <div className="text-sm text-[#6B7280]">Loading clauses…</div>
-                                ) : filteredClauses.length === 0 ? (
-                                  <div className="text-sm text-[#6B7280]">No clauses found.</div>
-                                ) : (
-                                  filteredClauses.slice(0, 50).map((c) => {
-                                    const checked = selectedClauseIds.includes(c.clause_id);
-                                    return (
-                                      <label
-                                        key={`${c.clause_id}-${c.version}`}
-                                        className="flex items-start gap-3 bg-white rounded-xl border border-black/5 p-3 cursor-pointer hover:border-black/10"
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          checked={checked}
-                                          onChange={() => toggleClause(c.clause_id)}
-                                          className="mt-1"
-                                        />
-                                        <div className="min-w-0">
-                                          <div className="text-sm font-semibold text-[#111827] truncate">{c.name}</div>
-                                          <div className="text-xs text-[#6B7280]">{c.clause_id}</div>
-                                        </div>
-                                      </label>
-                                    );
-                                  })
-                                )}
-                              </div>
+                          <p className="text-[10px] tracking-widest font-extrabold text-slate-400 uppercase mb-3">Clause Library</p>
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="relative mb-3">
+                              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                              <input value={clauseQuery} onChange={(e) => setClauseQuery(e.target.value)} placeholder="Search clauses…" className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
                             </div>
-
-                            <div className="bg-gray-50 rounded-2xl p-4 border border-black/5">
-                              <div className="flex items-center justify-between">
-                                <div className="font-semibold text-[#111827] text-sm">Constraints</div>
-                                <button
-                                  type="button"
-                                  onClick={addConstraint}
-                                  className="text-xs px-3 py-1.5 rounded-full bg-white border border-black/10 hover:border-black/20"
-                                >
-                                  Add
-                                </button>
-                              </div>
-
-                              {/* Constraint Library */}
-                              <div className="mt-3">
-                                <div className="text-xs font-semibold text-[#6B7280]">Constraint Library</div>
-                                <input
-                                  value={constraintLibraryQuery}
-                                  onChange={(e) => setConstraintLibraryQuery(e.target.value)}
-                                  placeholder="Search constraints…"
-                                  className="mt-2 w-full px-4 py-2.5 border border-black/10 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
-                                />
-                                <div className="mt-2 max-h-44 overflow-y-auto space-y-2 pr-1">
-                                  {constraintLibraryLoading ? (
-                                    <div className="text-sm text-[#6B7280]">Loading constraints…</div>
-                                  ) : constraintLibrary.length === 0 ? (
-                                    <div className="text-sm text-[#6B7280]">No constraints available.</div>
-                                  ) : (
-                                    constraintLibrary
-                                      .filter((x) => {
-                                        const q = constraintLibraryQuery.trim().toLowerCase();
-                                        if (!q) return true;
-                                        const hay = `${x.label || ''} ${x.key || ''} ${x.category || ''}`.toLowerCase();
-                                        return hay.includes(q);
-                                      })
-                                      .slice(0, 40)
-                                      .map((x) => (
-                                        <button
-                                          key={x.key}
-                                          type="button"
-                                          onClick={() => addConstraintFromLibrary(x)}
-                                          className="w-full text-left bg-white rounded-xl border border-black/5 p-3 hover:border-black/10"
-                                        >
-                                          <div className="flex items-center justify-between gap-3">
-                                            <div className="min-w-0">
-                                              <div className="text-sm font-semibold text-[#111827] truncate">{x.label}</div>
-                                              <div className="text-xs text-[#6B7280]">
-                                                {(x.category || 'General') + (x.default ? ` • Default: ${String(x.default)}` : '')}
-                                              </div>
-                                            </div>
-                                            <div className="text-xs font-semibold text-blue-600">Add</div>
-                                          </div>
-                                        </button>
-                                      ))
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="mt-3 space-y-3">
-                                {constraints.length === 0 ? (
-                                  <div className="text-sm text-[#6B7280]">Add constraints like jurisdiction, data residency, liability caps, etc.</div>
-                                ) : (
-                                  constraints.map((c, idx) => (
-                                    <div key={idx} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                      <input
-                                        value={c.name}
-                                        onChange={(e) =>
-                                          setConstraints((p) => p.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)))
-                                        }
-                                        placeholder="Constraint name"
-                                        className="w-full px-4 py-2.5 border border-black/10 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
-                                      />
-                                      <div className="flex gap-2">
-                                        <input
-                                          value={c.value}
-                                          onChange={(e) =>
-                                            setConstraints((p) => p.map((x, i) => (i === idx ? { ...x, value: e.target.value } : x)))
-                                          }
-                                          placeholder="Value"
-                                          className="flex-1 px-4 py-2.5 border border-black/10 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => setConstraints((p) => p.filter((_, i) => i !== idx))}
-                                          className="px-3 py-2.5 rounded-xl bg-white border border-black/10 hover:border-black/20 text-[#6B7280]"
-                                          aria-label="Remove constraint"
-                                        >
-                                          ✕
-                                        </button>
-                                      </div>
+                            <div className="space-y-2 max-h-44 overflow-y-auto pr-0.5">
+                              {clausesLoading ? <p className="text-sm text-slate-400">Loading…</p> : filteredClauses.length === 0 ? <p className="text-sm text-slate-400">No clauses found.</p> : filteredClauses.slice(0, 50).map((c) => {
+                                const checked = selectedClauseIds.includes(c.clause_id);
+                                return (
+                                  <label key={`${c.clause_id}-${c.version}`} className="flex items-start gap-3 bg-white rounded-xl border border-slate-200 p-3 cursor-pointer hover:border-blue-200 transition">
+                                    <input type="checkbox" checked={checked} onChange={() => toggleClause(c.clause_id)} className="mt-0.5 accent-blue-600" />
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-slate-800 truncate">{c.name}</p>
+                                      <p className="text-[11px] text-slate-400 font-mono">{c.clause_id}</p>
                                     </div>
-                                  ))
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="bg-gray-50 rounded-2xl p-4 border border-black/5">
-                              <div className="flex items-center justify-between">
-                                <div className="font-semibold text-[#111827] text-sm">Custom Clauses</div>
-                                <button
-                                  type="button"
-                                  onClick={addCustomClause}
-                                  className="text-xs px-3 py-1.5 rounded-full bg-white border border-black/10 hover:border-black/20"
-                                >
-                                  Add
-                                </button>
-                              </div>
-                              <div className="mt-3 space-y-3">
-                                {customClauses.length === 0 ? (
-                                  <div className="text-sm text-[#6B7280]">Add custom clauses like non-solicit, security, SLA, etc.</div>
-                                ) : (
-                                  customClauses.map((c, idx) => (
-                                    <div key={idx} className="bg-white rounded-2xl border border-black/5 p-3">
-                                      <div className="flex items-center justify-between gap-2">
-                                        <input
-                                          value={c.title || ''}
-                                          onChange={(e) =>
-                                            setCustomClauses((p) => p.map((x, i) => (i === idx ? { ...x, title: e.target.value } : x)))
-                                          }
-                                          placeholder="Clause title"
-                                          className="flex-1 px-4 py-2.5 border border-black/10 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => setCustomClauses((p) => p.filter((_, i) => i !== idx))}
-                                          className="px-3 py-2.5 rounded-xl bg-white border border-black/10 hover:border-black/20 text-[#6B7280]"
-                                          aria-label="Remove custom clause"
-                                        >
-                                          ✕
-                                        </button>
-                                      </div>
-                                      <textarea
-                                        value={c.content}
-                                        onChange={(e) =>
-                                          setCustomClauses((p) => p.map((x, i) => (i === idx ? { ...x, content: e.target.value } : x)))
-                                        }
-                                        placeholder="Write clause content…"
-                                        className="mt-3 w-full px-4 py-3 border border-black/10 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 min-h-[96px]"
-                                      />
-                                    </div>
-                                  ))
-                                )}
-                              </div>
+                                  </label>
+                                );
+                              })}
                             </div>
                           </div>
+                        </div>
+
+                        {/* Constraints */}
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-[10px] tracking-widest font-extrabold text-slate-400 uppercase">Constraints</p>
+                            <button type="button" onClick={addConstraint} className="text-xs font-semibold text-blue-600 hover:underline">+ Add custom</button>
+                          </div>
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                            <div className="relative">
+                              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                              <input value={constraintLibraryQuery} onChange={(e) => setConstraintLibraryQuery(e.target.value)} placeholder="Search constraint library…" className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                            </div>
+                            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
+                              {constraintLibraryLoading ? <p className="text-sm text-slate-400">Loading…</p> : constraintLibrary.filter((x) => { const q = constraintLibraryQuery.trim().toLowerCase(); if (!q) return true; return `${x.label} ${x.key} ${x.category || ''}`.toLowerCase().includes(q); }).slice(0, 40).map((x) => (
+                                <button key={x.key} type="button" onClick={() => addConstraintFromLibrary(x)} className="w-full text-left bg-white rounded-xl border border-slate-200 px-3 py-2.5 hover:border-blue-200 transition flex items-center justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-slate-800 truncate">{x.label}</p>
+                                    <p className="text-[11px] text-slate-400">{x.category || 'General'}{x.default ? ` · ${String(x.default)}` : ''}</p>
+                                  </div>
+                                  <span className="text-xs font-extrabold text-blue-600 shrink-0">+ Add</span>
+                                </button>
+                              ))}
+                            </div>
+                            {constraints.length > 0 && (
+                              <div className="pt-2 border-t border-slate-200 space-y-2">
+                                {constraints.map((c, idx) => (
+                                  <div key={idx} className="flex gap-2">
+                                    <input value={c.name} onChange={(e) => setConstraints((p) => p.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)))} placeholder="Name" className="flex-1 px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                                    <input value={c.value} onChange={(e) => setConstraints((p) => p.map((x, i) => (i === idx ? { ...x, value: e.target.value } : x)))} placeholder="Value" className="flex-1 px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                                    <button type="button" onClick={() => setConstraints((p) => p.filter((_, i) => i !== idx))} className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 flex items-center justify-center transition">✕</button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Custom Clauses */}
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-[10px] tracking-widest font-extrabold text-slate-400 uppercase">Custom Clauses</p>
+                            <button type="button" onClick={addCustomClause} className="text-xs font-semibold text-blue-600 hover:underline">+ Add clause</button>
+                          </div>
+                          {customClauses.length === 0 ? (
+                            <p className="text-sm text-slate-400">Add bespoke clauses like non-solicit, SLA, data retention, etc.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {customClauses.map((c, idx) => (
+                                <div key={idx} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                  <div className="flex gap-2 mb-2">
+                                    <input value={c.title || ''} onChange={(e) => setCustomClauses((p) => p.map((x, i) => (i === idx ? { ...x, title: e.target.value } : x)))} placeholder="Clause title" className="flex-1 px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                                    <button type="button" onClick={() => setCustomClauses((p) => p.filter((_, i) => i !== idx))} className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 flex items-center justify-center transition">✕</button>
+                                  </div>
+                                  <textarea value={c.content} onChange={(e) => setCustomClauses((p) => p.map((x, i) => (i === idx ? { ...x, content: e.target.value } : x)))} placeholder="Clause content…" className="w-full px-3 py-3 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 min-h-[80px]" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
                   </div>
                 </div>
 
-                {/* Right: Live Preview */}
-                <div className="bg-white rounded-[18px] border border-black/5 shadow-sm overflow-hidden lg:col-span-7 lg:sticky lg:top-6 self-start">
-                  <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="text-xs text-[#6B7280] font-semibold">Live Preview</div>
+                {/* ── RIGHT: LIVE PREVIEW ── */}
+                <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-200 overflow-hidden lg:sticky lg:top-6 self-start flex flex-col">
+
+                  {/* Preview header */}
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      <p className="text-sm font-extrabold text-slate-800">Live Preview</p>
+                      {previewLoading && (
+                        <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                          <span className="w-3 h-3 rounded-full border-2 border-blue-300 border-t-transparent animate-spin" />
+                          Updating…
+                        </span>
+                      )}
+                    </div>
+                    {schema?.template_type && (
+                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                        {schema.template_type}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Document body */}
+                  <div className="flex-1 p-5">
+                    <div className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden h-full">
+                      {/* Accent stripe */}
+                      <div className="h-1.5 bg-gradient-to-r from-blue-700 to-blue-400" />
+
+                      <div className="p-5 overflow-y-auto max-h-[calc(100vh-360px)]">
+                        {!selectedTemplate ? (
+                          <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div className="w-16 h-16 rounded-3xl bg-white border border-slate-200 flex items-center justify-center mb-4 shadow-sm">
+                              <FileText className="w-7 h-7 text-slate-300" />
+                            </div>
+                            <p className="text-sm font-semibold text-slate-400">Select a template to see a preview</p>
+                            <p className="text-xs text-slate-300 mt-1">Your document will appear here as you fill the form</p>
+                          </div>
+                        ) : previewLoading && !previewText ? (
+                          <div className="flex items-center gap-2 text-sm text-slate-400 py-8">
+                            <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+                            Generating preview…
+                          </div>
+                        ) : previewText ? (
+                          <pre className="whitespace-pre-wrap text-[12.5px] leading-relaxed text-slate-800 font-serif">
+                            {previewText}
+                          </pre>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <p className="text-sm text-slate-400">Start filling fields to see a live preview</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-4">
-                    <div className="bg-gray-100 rounded-[18px] p-2 sm:p-3">
-                      <div className="bg-white rounded-[14px] shadow-sm border border-black/5 overflow-hidden">
-                        <div
-                          className="p-5 sm:p-6 overflow-visible lg:overflow-y-auto lg:max-h-[calc(100vh-320px)]"
-                        >
-                          {previewLoading ? (
-                            <div className="text-sm text-[#6B7280]">Generating preview…</div>
-                          ) : !selectedTemplate ? (
-                            <div className="text-sm text-[#6B7280]">Select a template to preview.</div>
-                          ) : previewText ? (
-                            <div className="inline-block min-w-full">
-                              <pre className="whitespace-pre-wrap text-[13px] leading-relaxed text-[#111827] font-serif">
-                                {previewText}
-                              </pre>
-                            </div>
-                          ) : (
-                            <div className="text-sm text-[#6B7280]">Start filling fields to see a preview.</div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="text-sm text-[#6B7280] min-w-0">
-                        {!user ? 'Please log in to create contracts.' : schema?.template_type ? `Type: ${schema.template_type}` : null}
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={isCreateDisabled}
-                        className="bg-blue-600 text-white w-full sm:w-auto px-7 py-3.5 rounded-full shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
-                      >
-                        {loading ? 'Creating…' : 'Move to editor'}
-                      </button>
-                    </div>
+                  {/* Footer CTA */}
+                  <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                    <p className="text-xs text-slate-400">
+                      {!user ? 'Please sign in to create contracts.' : 'Ready to generate your contract from this template.'}
+                    </p>
+                    <button
+                      type="submit"
+                      disabled={isCreateDisabled}
+                      className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-2xl text-sm font-extrabold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      {loading ? (
+                        <><span className="w-4 h-4 rounded-full border-2 border-white/50 border-t-white animate-spin" /> Creating…</>
+                      ) : 'Move to Editor →'}
+                    </button>
                   </div>
                 </div>
               </form>
             </>
           )}
-        </div>
       </div>
     </DashboardLayout>
   );

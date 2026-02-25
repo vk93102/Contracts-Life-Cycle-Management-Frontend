@@ -207,202 +207,266 @@ export default function AdminPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-end mb-4">
-      </div>
+      <div className="space-y-6">
 
-      {error && (
-        <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800 text-sm">
-          {error}
-        </div>
-      )}
-
-      <GovernanceDashboardAdminV2
-        analytics={analytics}
-        userRegistration={userRegistration}
-        featureUsage={featureUsage}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 mt-6">
-        <div className="lg:col-span-2 rounded-[28px] bg-white/80 border border-white shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-1">
-            <FileText className="w-5 h-5 text-slate-700" />
-            <h2 className="text-lg font-extrabold text-slate-900">Contracts by Type</h2>
-          </div>
-          <p className="text-sm text-slate-500">Top contract types by volume</p>
-          <div className="h-72 mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={contractTypeData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E6EAF0" />
-                <XAxis
-                  dataKey="contract_type"
-                  tick={{ fontSize: 12, fill: '#94A3B8' }}
-                  interval={0}
-                  angle={-18}
-                  textAnchor="end"
-                  height={70}
-                />
-                <YAxis tick={{ fontSize: 12, fill: '#94A3B8' }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #E6EAF0',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 25px rgba(15,20,31,0.08)',
-                  }}
-                />
-                <Bar dataKey="count" fill="#FF5C7A" radius={[10, 10, 2, 2]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="rounded-[28px] bg-white/80 border border-white shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="w-5 h-5 text-slate-700" />
-            <h2 className="text-lg font-extrabold text-slate-900">Operational</h2>
-          </div>
-          <p className="text-sm text-slate-500">Quick signals for admin ops</p>
-          <div className="space-y-3 mt-5">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Users (active)</span>
-              <span className="font-extrabold text-slate-900">
-                {analytics?.users?.active ?? 0} / {analytics?.users?.total ?? 0}
-              </span>
+        {/* ── PAGE HEADER ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <Shield className="w-6 h-6" />
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Admins / Superadmins</span>
-              <span className="font-extrabold text-slate-900">
-                {analytics?.users?.admins ?? 0} / {analytics?.users?.superadmins ?? 0}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Contracts expiring (30d)</span>
-              <span className="font-extrabold text-slate-900">{analytics?.contracts?.expiring_next_30d ?? 0}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Avg completion</span>
-              <span className="font-extrabold text-slate-900">—</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Audit logs (7d)</span>
-              <span className="font-extrabold text-slate-900">{analytics?.activity_summary?.audit_logs_last_7d ?? 0}</span>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Admin Panel</h1>
+              <p className="text-sm text-slate-500 mt-0.5">System analytics, governance &amp; user management</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="rounded-3xl bg-white border border-slate-200 p-6">
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-slate-700" />
-            <h2 className="text-lg font-extrabold text-slate-900">Admins</h2>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search users by email/name…"
-              className="w-full sm:w-80 bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
-            />
+          <div className="flex items-center gap-2 shrink-0">
             {isSuperAdmin && (
-              <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800">
-                <input
-                  type="checkbox"
-                  checked={allTenants}
-                  onChange={(e) => setAllTenants(e.target.checked)}
-                  className="accent-slate-900"
-                />
-                All tenants
-              </label>
+              <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700">
+                Super Admin
+              </span>
             )}
             <button
-              onClick={() => loadUsers()}
-              disabled={loading || usersLoading}
-              className="w-full sm:w-auto rounded-2xl bg-slate-900 text-white px-4 py-2 text-sm font-semibold hover:bg-slate-800 disabled:opacity-60"
+              onClick={() => { loadDashboard(); loadUsers(''); }}
+              disabled={loading}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-2xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition disabled:opacity-60"
             >
-              {usersLoading ? 'Searching…' : 'Search'}
+              <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
             </button>
           </div>
         </div>
 
-        <div className="mb-4 text-xs text-slate-500">
-          Showing <span className="font-semibold text-slate-700">{users.length}</span> users
-          {query ? (
-            <>
-              {' '}for <span className="font-semibold text-slate-700">{query}</span>
-            </>
-          ) : null}
-          {isSuperAdmin && allTenants ? ' (all tenants)' : ''}.
-        </div>
-
-        {!isSuperAdmin && (
-          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
-            Only Super Admins can promote/demote admins.
+        {/* ── ERROR BANNER ── */}
+        {error && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-red-700 text-sm flex items-center gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+            {error}
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500">
-                <th className="py-3 pr-4">Email</th>
-                <th className="py-3 pr-4">Name</th>
-                <th className="py-3 pr-4">Role</th>
-                <th className="py-3 pr-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.user_id} className="border-t border-slate-100">
-                  <td className="py-3 pr-4 font-medium text-slate-900">{u.email}</td>
-                  <td className="py-3 pr-4 text-slate-700">{[u.first_name, u.last_name].filter(Boolean).join(' ') || '—'}</td>
-                  <td className="py-3 pr-4">
-                    <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                        u.is_admin ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {u.is_admin ? 'Admin' : 'User'}
-                    </span>
-                  </td>
-                  <td className="py-3 pr-4">
-                    {u.is_admin ? (
-                      <button
-                        onClick={() => demote(u)}
-                        disabled={loading || !isSuperAdmin}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-white border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
-                      >
-                        <ArrowDownRight className="w-4 h-4" />
-                        Demote
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => promote(u)}
-                        disabled={loading || !isSuperAdmin}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 text-white px-3 py-2 text-xs font-semibold hover:bg-slate-800 disabled:opacity-60"
-                      >
-                        <ArrowUpRight className="w-4 h-4" />
-                        Promote
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+        {/* ── GOVERNANCE DASHBOARD ── */}
+        <GovernanceDashboardAdminV2
+          analytics={analytics}
+          userRegistration={userRegistration}
+          featureUsage={featureUsage}
+        />
 
-              {!users.length && (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-500">
-                    No users found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        {/* ── CHARTS STRIP ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Contracts by type bar chart */}
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                  </div>
+                  <h2 className="text-sm font-extrabold text-slate-800">Contracts by Type</h2>
+                </div>
+                <p className="text-xs text-slate-400 ml-9">Volume breakdown by contract category</p>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
+                {contractTypeData.length} types
+              </span>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={contractTypeData} margin={{ top: 4, right: 4, left: -8, bottom: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                  <XAxis
+                    dataKey="contract_type"
+                    tick={{ fontSize: 11, fill: '#94A3B8' }}
+                    interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                    height={60}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#94A3B8' }}
+                    allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                      fontSize: '12px',
+                    }}
+                    cursor={{ fill: '#F8FAFC' }}
+                  />
+                  <Bar dataKey="count" fill="#2563EB" radius={[6, 6, 2, 2]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Operational signals */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Clock className="w-3.5 h-3.5 text-blue-600" />
+              </div>
+              <h2 className="text-sm font-extrabold text-slate-800">Operational Signals</h2>
+            </div>
+            <div className="flex-1 space-y-0 divide-y divide-slate-100">
+              {[
+                { label: 'Active users', value: `${analytics?.users?.active ?? 0} / ${analytics?.users?.total ?? 0}` },
+                { label: 'Admins / Superadmins', value: `${analytics?.users?.admins ?? 0} / ${analytics?.users?.superadmins ?? 0}` },
+                { label: 'Expiring contracts (30d)', value: String(analytics?.contracts?.expiring_next_30d ?? 0), highlight: (analytics?.contracts?.expiring_next_30d ?? 0) > 0 },
+                { label: 'Avg completion time', value: fmtSeconds(analytics?.contracts?.avg_completion_seconds) },
+                { label: 'Audit logs (7d)', value: String(analytics?.activity_summary?.audit_logs_last_7d ?? 0) },
+                { label: 'AI assist sessions', value: String(analytics?.activity_summary?.ai_sessions ?? '—') },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center justify-between py-2.5">
+                  <span className="text-xs text-slate-500">{s.label}</span>
+                  <span className={`text-sm font-extrabold ${ s.highlight ? 'text-amber-600' : 'text-slate-900' }`}>{s.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <p className="mt-4 text-xs text-slate-500">
-          Note: after promotion/demotion, the user must re-login to update their admin token.
-        </p>
+        {/* ── USER MANAGEMENT ── */}
+        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
+
+          {/* Card header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-extrabold text-slate-800">User Management</h2>
+                <p className="text-xs text-slate-400">
+                  {users.length} user{users.length === 1 ? '' : 's'}
+                  {query ? ` matching "${query}"` : ''}
+                  {isSuperAdmin && allTenants ? ' · all tenants' : ''}
+                </p>
+              </div>
+            </div>
+
+            {/* Search controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-none">
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search email or name…"
+                  className="w-full sm:w-72 bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              {isSuperAdmin && (
+                <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer hover:bg-white transition">
+                  <input
+                    type="checkbox"
+                    checked={allTenants}
+                    onChange={(e) => setAllTenants(e.target.checked)}
+                    className="accent-blue-600"
+                  />
+                  All tenants
+                </label>
+              )}
+              <button
+                onClick={() => loadUsers()}
+                disabled={loading || usersLoading}
+                className="h-9 px-4 rounded-2xl bg-blue-600 text-white text-sm font-extrabold hover:bg-blue-700 transition disabled:opacity-60 whitespace-nowrap"
+              >
+                {usersLoading ? 'Searching…' : 'Search'}
+              </button>
+            </div>
+          </div>
+
+          {/* Super-admin warning */}
+          {!isSuperAdmin && (
+            <div className="mx-6 mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-amber-800 text-xs font-semibold">
+              Only Super Admins can promote or demote users.
+            </div>
+          )}
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="py-3 px-6 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Email</th>
+                  <th className="py-3 px-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Name</th>
+                  <th className="py-3 px-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Role</th>
+                  <th className="py-3 px-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Joined</th>
+                  <th className="py-3 px-4 text-right text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-slate-400 text-sm">
+                      {usersLoading ? (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="w-4 h-4 rounded-full border-2 border-blue-300 border-t-transparent animate-spin" />
+                          Searching…
+                        </span>
+                      ) : 'No users found.'}
+                    </td>
+                  </tr>
+                ) : users.map((u) => (
+                  <tr key={u.user_id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="py-3.5 px-6">
+                      <p className="font-semibold text-slate-900">{u.email}</p>
+                      <p className="text-[11px] text-slate-400 font-mono">{u.user_id}</p>
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-700">
+                      {[u.first_name, u.last_name].filter(Boolean).join(' ') || <span className="text-slate-300">—</span>}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${
+                        u.is_admin
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}>
+                        {u.is_admin ? 'Admin' : 'User'}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-xs text-slate-400">
+                      {u.date_joined ? new Date(u.date_joined).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      {u.is_admin ? (
+                        <button
+                          onClick={() => demote(u)}
+                          disabled={loading || !isSuperAdmin}
+                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition disabled:opacity-50"
+                        >
+                          <ArrowDownRight className="w-3.5 h-3.5" />
+                          Demote
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => promote(u)}
+                          disabled={loading || !isSuperAdmin}
+                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-blue-600 text-white text-xs font-extrabold hover:bg-blue-700 transition disabled:opacity-50"
+                        >
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                          Promote
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer note */}
+          <div className="px-6 py-3 border-t border-slate-100">
+            <p className="text-[11px] text-slate-400">Note: after promotion or demotion, the user must sign out and sign back in to refresh their access token.</p>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );
