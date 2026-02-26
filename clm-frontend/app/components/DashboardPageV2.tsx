@@ -366,10 +366,6 @@ const DashboardPageV2: React.FC = () => {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard</h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-              Live
-            </span>
           </div>
           <p className="text-sm text-gray-400">{dateStr} · {timeStr}</p>
         </div>

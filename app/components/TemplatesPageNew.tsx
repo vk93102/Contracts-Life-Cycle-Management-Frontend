@@ -72,7 +72,7 @@ interface TemplateTypesResponse {
 // CONSTANTS
 // ============================================================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://lawflow-267708864896.asia-south1.run.appapi/v1'
 
 const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
   NDA: <IconShield className="w-6 h-6" />,

@@ -5,7 +5,8 @@ self.__SERVER_FILES_MANIFEST={
     "cacheComponents": false,
     "htmlLimitedBots": "[\\w-]+-Google|Google-[\\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight",
     "assetPrefix": "",
-    "trailingSlash": false,
+    "output": "export",
+    "trailingSlash": true,
     "images": {
       "deviceSizes": [
         640,
@@ -26,7 +27,7 @@ self.__SERVER_FILES_MANIFEST={
         256,
         384
       ],
-      "path": "/_next/image",
+      "path": "/_next/image/",
       "loader": "default",
       "loaderFile": "",
       "domains": [],
@@ -50,7 +51,7 @@ self.__SERVER_FILES_MANIFEST={
       "qualities": [
         75
       ],
-      "unoptimized": false
+      "unoptimized": true
     },
     "reactMaxHeadersLength": 6000,
     "cacheLife": {

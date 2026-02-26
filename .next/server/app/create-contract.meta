@@ -2,7 +2,7 @@
   "headers": {
     "x-nextjs-stale-time": "300",
     "x-nextjs-prerender": "1",
-    "x-next-cache-tags": "_N_T_/layout,_N_T_/create-contract/layout,_N_T_/create-contract/page,_N_T_/create-contract"
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/create-contract/layout,_N_T_/create-contract/page,_N_T_/create-contract/"
   },
   "segmentPaths": [
     "/_tree",

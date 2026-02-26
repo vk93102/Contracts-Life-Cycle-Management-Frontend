@@ -34,7 +34,7 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Base URL (no trailing /api). Endpoints are under /api/v1
-  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lawflow-267708864896.asia-south1.run.app';
   
   // Helper to get token from localStorage
   const getToken = () => {
